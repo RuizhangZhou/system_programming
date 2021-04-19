@@ -20,28 +20,33 @@ Everything that is necessary to get the input from the Buttons in a clean format
  *           4 Buttons: 1,3,4 -pushed: 00001101
  */
 uint8_t getInput(void) {
-    #warning IMPLEMENT STH. HERE
+    const uint8_t pressed = ~PINC & 0b11000011;
+	return (pressed & 0b00000011) | (pressed >> 4);
 }
 
 /*!
  *  Initializes DDR and PORT for input
  */
 void initInput(void) {
-    #warning IMPLEMENT STH. HERE
+	//Set DDR of PORTC 0,1,6 & 7 to input
+    DDRC &= ~(0b11000011);
+	
+	//Set Pullups
+	PORTC |= 0b11000011;
 }
 
 /*!
  *  Endless loop as long as at least one button is pressed.
  */
 void waitForNoInput(void) {
-    #warning IMPLEMENT STH. HERE
+    while((PINC & 0b11000011) != 0b11000011);
 }
 
 /*!
  *  Endless loop until at least one button is pressed.
  */
 void waitForInput(void) {
-    #warning IMPLEMENT STH. HERE
+    while((PINC & 0b11000011) == 0b11000011);
 }
 
 /*!

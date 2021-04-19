@@ -1,12 +1,30 @@
 #include <avr/io.h>
+#include "button.h"
+#include "lcd.h"
+#include "pointer.h"
 
 
 int main(void){
 	
 	
-    /* Replace with your application code */
-    while (1) 
+    //LED
+    //led_init();
+    
+    //Buttons
+    initInput();
+    
+    //lcd_init();
+    
+    while(1)
     {
+	    buttonTest();
+	    //led_fun();
+	    //convert();
+	    //loop();
+	    //shift();
+	    //learningPointers();
+	    //displayArticles();
     }
+	
 }
 

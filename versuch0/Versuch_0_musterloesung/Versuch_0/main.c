@@ -27,10 +27,10 @@ int main(void)
 	
 	while(1)
     {
-		//buttonTest();
+		buttonTest();
 		//led_fun();
 		//convert();
-		loop();
+		//loop();
 		//shift();	
 		//learningPointers();
 		//displayArticles();
