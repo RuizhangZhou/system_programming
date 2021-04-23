@@ -137,5 +137,18 @@ void os_init(void) {
  *  \param str  The error to be displayed
  */
 void os_errorPStr(char const* str) {
-    #warning IMPLEMENT STH. HERE
+    uint8_t const last_bit = 0;
+    last_bit = SREG & 0b10000000;
+    SREG &= 0b01111111;
+    lcd_clear();
+    lcd_writeProgString(PSTR(str)); // maybe * ?
+
+    // enter + esc -> button1 + button4 (what if other buttons are pressed?)
+    while(!(os_getInput() == 0b1001)) {
+        os_waitForInput();
+    }
+    os_waitForNoInput();
+    if(last_bit) {
+        SREG = 0b10000000 | SREG;
+    }
 }
