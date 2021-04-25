@@ -19,8 +19,8 @@
 typedef ? ProcessID;
 
 //! The type for the ID of a program.
-#warning IMPLEMENT STH. HERE
-typedef ? ProgramID;
+//#warning IMPLEMENT STH. HERE
+typedef uint8_t ProgramID;
 
 //! The type of the priority of a process.
 typedef uint8_t Priority;
@@ -51,14 +51,18 @@ typedef union StackPointer {
  *  Note that additional scheduling information (such as the current time-slice)
  *  are stored by the module that implements the actual scheduling strategies.
  */
-#warning IMPLEMENT STH. HERE
+//#warning IMPLEMENT STH. HERE
 typedef struct {
-    ?
+    ProgramID progID;
+	ProcessState state;
+	Priority priority;
+	StackPointer sp;
+	
 } Process;
 
 //! This is the type of a program function (not the pointer to one!).
 #warning IMPLEMENT STH. HERE
-typedef ? (Program)(?);
+typedef void Program(void);
 
 //! Specifies if a program should be automatically executed on boot-up.
 typedef enum {

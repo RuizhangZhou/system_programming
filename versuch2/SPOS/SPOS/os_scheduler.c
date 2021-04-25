@@ -17,10 +17,17 @@
 //----------------------------------------------------------------------------
 
 //! Array of states for every possible process
-#warning IMPLEMENT STH. HERE
+//#warning IMPLEMENT STH. HERE
+Process os_processes[MAX_NUMBER_OF_PROCESSES];//MAX_NUMBER_OF_PROCESSES=8 defined in defines.h
 
 //! Array of function pointers for every registered program
-#warning IMPLEMENT STH. HERE
+//#warning IMPLEMENT STH. HERE
+//MAX_NUMBER_OF_PROGRAMS=16
+Program* os_programs[MAX_NUMBER_OF_PROGRAMS];//Program *os_programs[MAX_NUMBER_OF_PROGRAMS]; //Is also okay? have tried: yes
+//int* p[10];//can also write as int *p[10];
+//priority of [] is higher than *, first form the p[10] array, the datatype of the elements in the array is int*(int *)
+//Is there difference here "Program*" and "*Program"? have tried: "*Program" doesn't work. 
+//The grammar of this datatype(pointer points to the Program): "Program*" or "Program *",they are same
 
 //! Index of process that is currently executed (default: idle)
 #warning IMPLEMENT STH. HERE
