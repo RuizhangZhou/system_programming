@@ -9,7 +9,7 @@
 #include <avr/io.h>
 #include "button.h"
 #include "led.h"
-#include "datatyes.h"
+#include "datatypes.h"
 #include "structures.h"
 #include "lcd.h"
 #include "pointer.h"
@@ -25,14 +25,16 @@ int main(void)
 	 
 	lcd_init();
 	
-	while(1)
-    {
+	//shift();
+	//convert();
+	
+	while(1){
 		//buttonTest();
 		//led_fun();
 		//convert();
-		loop();
+		//loop();
 		//shift();	
-		//learningPointers();
+		learningPointers();
 		//displayArticles();
 	}
 		

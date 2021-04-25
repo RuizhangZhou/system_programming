@@ -62,13 +62,14 @@ void learningPointers(void){
 		while(1);
 	}
 	displayStep('1', 0, PSTR("Alloc Mem.Start:"), 0, (uint16_t)(memory));
+	//void displayStep(uint8_t step, uint8_t newLine, const char string[], uint8_t character, uint16_t decimal);
 
 
 	//----------------------------------------------------------------------------
 	// Step 2: learning to count with addresses and dereferencing
 	//----------------------------------------------------------------------------
 	displayStep('2', 1, PSTR("Dereferencing"), 0, 0);
-	*(memory+5) = alphabet[6];
+	*(memory+5) = alphabet[6];//"R"
 
 
 	//----------------------------------------------------------------------------
@@ -78,18 +79,18 @@ void learningPointers(void){
 	displayStep('3', 1, PSTR("Character: "), charVar, 0);
 
 	uint8_t* pCharVar = &charVar;
-	*(pCharVar) = alphabet[2];
+	*(pCharVar) = alphabet[2];//"I"
 
-	displayStep('3', 1, PSTR("Character: "), charVar, 0);
+	displayStep('3', 1, PSTR("Character: "), charVar, 0);//"I"
 	
 	//----------------------------------------------------------------------------
 	// Step 4: Call by Value and Call by Reference
 	//----------------------------------------------------------------------------
 	callByValue(alphabet[0]);
-	displayStep('4', 0, PSTR(" Call by  Value: "), alphabet[0], 0);
+	displayStep('4', 0, PSTR(" Call by  Value: "), alphabet[0], 0);//"P"
 
 	callByReference(alphabet);
-	displayStep('4', 0, PSTR(" Call by  Reference: "), alphabet[0], 0);
+	displayStep('4', 0, PSTR(" Call by  Reference: "), alphabet[0], 0);//"E"
 
 	//----------------------------------------------------------------------------
 	// Step 5: pointer on pointer
@@ -107,7 +108,8 @@ void learningPointers(void){
 	displayStep('6', 1, PSTR("sfoo.bar: "), sfoo.bar, 0);
 
 	sSecond pStruct = {.sPoi = &sfoo};
-	*(memory) = pStruct.sPoi->bar;
+	*(memory) = pStruct.sPoi->bar;//"->"as hier sPoi is the address of sfoo, 
+								  //also the pointer of the structure sFirst 
 	
 	//----------------------------------------------------------------------------
 	// Step 7: function pointer
@@ -137,12 +139,13 @@ uint8_t charFunction(void){
 
 //! Simple Example of Call By Value.
 void callByValue(uint8_t character){
-	character = 'E';
+	character = 'E';//the "character" here is just in this function
 }
 
 //! Simple Example of Call By Reference.
 void callByReference(uint8_t* character){
-	*character = 'E';
+	*character = 'E';//here change the value of the pointer "character",
+					 //and the pointer points to the address of "alphabet" outside of this function
 }
 
 

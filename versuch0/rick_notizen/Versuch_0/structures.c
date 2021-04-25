@@ -19,13 +19,13 @@ enum DistributionStatus {
 typedef enum DistributionStatus DistributionStatus; //Typedef für enum DistributioStatus
 
 typedef struct  {
-	uint8_t manufacturerID;
-	uint8_t productID;
-}ArticleNumber;
+	uint8_t manufacturerID;//8bits
+	uint8_t productID;//8bits
+}ArticleNumber;//16bits
 
 typedef union {
 	uint16_t combinedNumber;
-	ArticleNumber singleNumbers;
+	ArticleNumber singleNumbers;//16bits
 }FullArticleNumber;
 
 typedef struct {
