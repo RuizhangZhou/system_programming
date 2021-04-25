@@ -27,6 +27,7 @@ int main(void)
 	
 	//shift();
 	//convert();
+	lcd_writeDec(133);
 	
 	while(1){
 		//buttonTest();
@@ -34,7 +35,7 @@ int main(void)
 		//convert();
 		//loop();
 		//shift();	
-		learningPointers();
+		//learningPointers();
 		//displayArticles();
 	}
 		

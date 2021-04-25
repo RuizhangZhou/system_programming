@@ -137,18 +137,19 @@ void os_init(void) {
  *  \param str  The error to be displayed
  */
 void os_errorPStr(char const* str) {
-    uint8_t const last_bit = 0;
-    last_bit = SREG & 0b10000000;
-    SREG &= 0b01111111;
+    uint8_t vorSREG = SREG & 0b10000000;//get the MSB of original SREG
+    
+    SREG &= 0b01111111;//deaktiviert die Interrupts global
     lcd_clear();
     lcd_writeProgString(PSTR(str)); // maybe * ?
 
-    // enter + esc -> button1 + button4 (what if other buttons are pressed?)
-    while(!(os_getInput() == 0b1001)) {
+    // ENTER + ESC -> button1 + button4 (what if other buttons are pressed?)
+    while (!(os_getInput() & 0b1001 == 0b1001)) {//implies button 1,4 are not pushed,so we just waitForInput
         os_waitForInput();
     }
     os_waitForNoInput();
-    if(last_bit) {
-        SREG = 0b10000000 | SREG;
+	
+    if(vorSREG) {//if vorSREG=0,we don't need to do anything, cuz MSB of SREG is 0 now, we just keep the SREG the same as it originally was
+        SREG |= 0b10000000;
     }
 }
