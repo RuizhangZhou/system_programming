@@ -61,7 +61,7 @@ typedef struct {
 } Process;
 
 //! This is the type of a program function (not the pointer to one!).
-#warning IMPLEMENT STH. HERE
+//#warning IMPLEMENT STH. HERE
 typedef void Program(void);
 
 //! Specifies if a program should be automatically executed on boot-up.

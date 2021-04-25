@@ -125,7 +125,7 @@ Program* os_lookupProgramFunction(ProgramID programID) {
         return NULL;
     }
 
-    return os_programs[programID];
+    return os_programs[programID];//here we can see that the programID are 0,1,2,...,15
 }
 
 /*!
@@ -165,7 +165,50 @@ ProgramID os_lookupProgramID(Program* program) {
  *          defines.h on failure
  */
 ProcessID os_exec(ProgramID programID, Priority priority) {
-    #warning IMPLEMENT STH. HERE
+    //#warning IMPLEMENT STH. HERE
+	int8_t freeIndex = -1;
+	//Nach neuem Platz im Array suchen, bis eines gefunden wurde
+	for(uint8_t i = 0; i < MAX_NUMBER_OF_PROCESSES; i++){
+		if(os_processes[i].state == OS_PS_UNUSED){
+			freeIndex = i;
+			break;
+		}
+	}
+	
+	//Wenn kein Platz gefunden worden ist, dann ist freeIndex immer noch -1 und wir koennen hier rausquitten
+	if(freeIndex == -1){
+		return INVALID_PROCESS;	
+	}
+		
+	//Funktionszeiger des Prozesses laden. Wenn keiner vorhanden, dann quit
+	Program* currentProgramPointer = os_lookupProgramFunction(programID);
+	if(currentProgramPointer == NULL){
+		return INVALID_PROCESS;
+	}
+
+	//Prozess in den Prozess-Array eintragen
+	Process* newProcessPtr = &os_processes[freeIndex];
+	newProcessPtr->state = OS_PS_READY;//here newProcess is a point, so has to use ->
+	newProcessPtr->progID = programID;
+	newProcessPtr->priority = priority;
+	newProcessPtr->sp.as_int = PROCESS_STACK_BOTTOM(freeIndex);
+	
+	//the address of PC register(Programmzaehler)is 16 bits.
+	uint8_t low_byte= ((uint16_t)currentProgramPointer) & 0xff;//uint8_t automatisch abandon the higher 8 bits//can I just: uint8_t low_byte= (uint16_t)currentProgramPointer?
+	uint8_t high_byte= ((uint16_t)currentProgramPointer) >> 8;// move the higher 8 bits to the lower position, and the uint8_t automatisch take the lower 8 bits
+	
+	*(newProcessPtr->sp.as_ptr)=low_byte;
+	newProcessPtr->sp.as_ptr--;
+	*(newProcessPtr->sp.as_ptr)=high_byte;
+	newProcessPtr->sp.as_ptr--;//
+	
+	for(uint8_t i = 0; i < 33; i++){
+		*(newProcess->sp.as_ptr) = 0b00000000;//all set as 0b00000000
+		newProcess->sp.as_ptr--;//every register including SREG are 8 bits.
+	}
+	
+	
+	
 }
 
 /*!
