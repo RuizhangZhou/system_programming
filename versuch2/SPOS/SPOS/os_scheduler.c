@@ -225,6 +225,9 @@ ProgramID os_lookupProgramID(Program* program) {
  */
 ProcessID os_exec(ProgramID programID, Priority priority) {
     //#warning IMPLEMENT STH. HERE
+    //we dont want an interrupt here, so enter critical section
+	os_enterCriticalSection();
+
 	int8_t freeIndex = -1;
 	//Nach neuem Platz im Array suchen, bis eines gefunden wurde
 	for(uint8_t i = 0; i < MAX_NUMBER_OF_PROCESSES; i++){
@@ -232,6 +235,10 @@ ProcessID os_exec(ProgramID programID, Priority priority) {
 			freeIndex = i;
 			break;
 		}
+        if (i>=MAX_NUMBER_OF_PROCESSES){
+	    os_leaveCriticalSection();
+	    return INVALID_PROCESS;
+    }
 	}
 	
 	//Wenn kein Platz gefunden worden ist, dann ist freeIndex immer noch -1 und wir koennen hier rausquitten
@@ -242,19 +249,23 @@ ProcessID os_exec(ProgramID programID, Priority priority) {
 	//Funktionszeiger des Prozesses laden. Wenn keiner vorhanden, dann quit
 	Program* currentProgramPointer = os_lookupProgramFunction(programID);
 	if(currentProgramPointer == NULL){
+        os_leaveCriticalSection();
 		return INVALID_PROCESS;
 	}
 
 	//Prozess in den Prozess-Array eintragen
-	Process* newProcessPtr = &os_processes[freeIndex];
+    ProcessID pid = freeIndex;
+	Process* newProcessPtr = &os_processes[pid];
 	newProcessPtr->state = OS_PS_READY;//here newProcess is a point, so has to use ->
 	newProcessPtr->progID = programID;
 	newProcessPtr->priority = priority;
 	newProcessPtr->sp.as_int = PROCESS_STACK_BOTTOM(freeIndex);
 	
 	//the address of PC register(Programmzaehler)is 16 bits.
-	uint8_t low_byte= ((uint16_t)currentProgramPointer) & 0xff;//uint8_t automatisch abandon the higher 8 bits//can I just: uint8_t low_byte= (uint16_t)currentProgramPointer?
-	uint8_t high_byte= ((uint16_t)currentProgramPointer) >> 8;// move the higher 8 bits to the lower position, and the uint8_t automatisch take the lower 8 bits
+	uint8_t low_byte= ((uint16_t)currentProgramPointer) & 0xff;
+    //uint8_t automatisch abandon the higher 8 bits//can I just: uint8_t low_byte= (uint16_t)currentProgramPointer?
+	uint8_t high_byte= ((uint16_t)currentProgramPointer) >> 8;
+    // move the higher 8 bits to the lower position, and the uint8_t automatisch take the lower 8 bits
 	
 	*(newProcessPtr->sp.as_ptr)=low_byte;
 	newProcessPtr->sp.as_ptr--;
@@ -266,6 +277,11 @@ ProcessID os_exec(ProgramID programID, Priority priority) {
 		newProcess->sp.as_ptr--;//every register including SREG are 8 bits.
 	}
 	
+    newProcess->checksum = os_getStackChecksum(pid);
+	//set age of process to 0 and leave critical section
+	os_resetProcessSchedulingInformation(pid);
+    os_leaveCriticalSection();
+	return pid;
 	
 	
 }
