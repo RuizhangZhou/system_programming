@@ -30,17 +30,20 @@ Program* os_programs[MAX_NUMBER_OF_PROGRAMS];//Program *os_programs[MAX_NUMBER_O
 //The grammar of this datatype(pointer points to the Program): "Program*" or "Program *",they are same
 
 //! Index of process that is currently executed (default: idle)
-#warning IMPLEMENT STH. HERE
+//#warning IMPLEMENT STH. HERE
+ProcessID currectProc;
 
 //----------------------------------------------------------------------------
 // Private variables
 //----------------------------------------------------------------------------
 
 //! Currently active scheduling strategy
-#warning IMPLEMENT STH. HERE
+//#warning IMPLEMENT STH. HERE
+SchedulingStrategy currentStrategy;
 
 //! Count of currently nested critical sections
-#warning IMPLEMENT STH. HERE
+//#warning IMPLEMENT STH. HERE
+uint8_t criticalSectionCount = 0;
 
 //! Used to auto-execute programs.
 uint16_t os_autostart;
@@ -65,7 +68,59 @@ ISR(TIMER2_COMPA_vect) __attribute__((naked));
  *  the processor to that process.
  */
 ISR(TIMER2_COMPA_vect) {
-    #warning IMPLEMENT STH. HERE
+    //#warning IMPLEMENT STH. HERE
+    //Laufzeitkontext auf dem Prozessstack des aktuellen Prozesses sichern     
+	saveContext();
+
+    //Stackpointers des aktuellen Prozesses sichern
+	os_processes[os_getCurrentProc()].sp.as_int = SP; 
+	
+	//Stackpointer auf den Scheduler-Stack setzen
+	SP = BOTTOM_OF_ISR_STACK;
+    
+    os_initInput(); 
+    if((os_getInput() & 0b10000001) == 0b10000001) {
+		os_waitForNoInput();
+		os_taskManMain();
+	}
+
+    //Prozesszustand des aktuellen Prozesses auf OS_PS_READY setzen
+	os_processes[os_getCurrentProc()].state = OS_PS_READY; 
+
+    os_processes[os_getCurrentProc()].checksum = os_getStackChecksum(os_getCurrentProc());
+
+    //Scheduling-Strategie fuer naechsten Prozess auswaehlen
+	switch(os_getSchedulingStrategy()){
+		case OS_SS_EVEN:
+			currentProc = os_Scheduler_Even(os_processes,os_getCurrentProc());
+			break;
+		case OS_SS_RANDOM:
+		 	currentProc = os_Scheduler_Random(os_processes,os_getCurrentProc());
+			break;
+		case OS_SS_RUN_TO_COMPLETION:
+			currentProc = os_Scheduler_RunToCompletion(os_processes,os_getCurrentProc());
+			break;
+		case OS_SS_ROUND_ROBIN:
+			currentProc = os_Scheduler_RoundRobin(os_processes,os_getCurrentProc());
+			break;
+		case OS_SS_INACTIVE_AGING:
+			currentProc = os_Scheduler_InactiveAging(os_processes,os_getCurrentProc()) ;
+			break;
+	}
+
+    //Fortzusetzender Prozesszustand auf OS_PS_RUNNING setzen
+	os_processes[os_getCurrentProc()].state = OS_PS_RUNNING;
+
+    StackChecksum newChecksum = os_getStackChecksum(os_getCurrentProc());
+    if(os_processes[os_getCurrentProc()].checksum != newChecksum) {
+		os_error("Stack Inconsistency!");
+	}
+
+    //Stackpointer wiederherstellen
+    SP = os_processes[os_getCurrentProc()].sp.as_int;
+    
+    restoreContext();
+
 }
 
 /*!
@@ -110,7 +165,11 @@ bool os_checkAutostartProgram(ProgramID programID) {
  *  and processor time no other process wants to have.
  */
 PROGRAM(0, AUTOSTART) {
-    #warning IMPLEMENT STH. HERE
+    //#warning IMPLEMENT STH. HERE
+    while(1){
+		lcd_writeChar('.');
+		delayMs(DEFAULT_OUTPUT_DELAY);
+	}
 }
 
 /*!
@@ -217,7 +276,11 @@ ProcessID os_exec(ProgramID programID, Priority priority) {
  *  applications.
  */
 void os_startScheduler(void) {
-    #warning IMPLEMENT STH. HERE
+    //#warning IMPLEMENT STH. HERE
+    currentProc = 0;
+	os_processes[0].state = OS_PS_RUNNING;
+	SP = os_processes[0].sp.as_int;
+	restoreContext();
 }
 
 /*!
@@ -225,7 +288,16 @@ void os_startScheduler(void) {
  *  initialize its internal data-structures and register.
  */
 void os_initScheduler(void) {
-    #warning IMPLEMENT STH. HERE
+    //#warning IMPLEMENT STH. HERE
+    ProcessID id = 0;
+    for(id=0; id<MAX_NUMBER_OF_PROCESSES; id++){
+	os_processes[id].state = OS_PS_UNUSED;
+    }
+    for(uint8_t id=0; id<MAX_NUMBER_OF_PROGRAMS; id++){
+        if(os_checkAutostartProgram(id)){
+            os_exec(id,DEFAULT_PRIORITY);
+        }
+    }
 }
 
 /*!
@@ -254,7 +326,8 @@ Program** os_getProgramSlot(ProgramID programID) {
  *  \return The process id of the currently active process.
  */
 ProcessID os_getCurrentProc(void) {
-    #warning IMPLEMENT STH. HERE
+    //#warning IMPLEMENT STH. HERE
+    return currentProc;
 }
 
 /*!
@@ -292,7 +365,8 @@ uint8_t os_getNumberOfRegisteredPrograms(void) {
  *  \param strategy The strategy that will be used after the function finishes.
  */
 void os_setSchedulingStrategy(SchedulingStrategy strategy) {
-    #warning IMPLEMENT STH. HERE
+    //#warning IMPLEMENT STH. HERE
+    currentStrategy = strategy;
 }
 
 /*!
@@ -301,7 +375,8 @@ void os_setSchedulingStrategy(SchedulingStrategy strategy) {
  *  \return The current scheduling strategy.
  */
 SchedulingStrategy os_getSchedulingStrategy(void) {
-    #warning IMPLEMENT STH. HERE
+    //#warning IMPLEMENT STH. HERE
+    return currentStrategy;
 }
 
 /*!
@@ -312,7 +387,17 @@ SchedulingStrategy os_getSchedulingStrategy(void) {
  *  This function supports up to 255 nested critical sections.
  */
 void os_enterCriticalSection(void) {
-    #warning IMPLEMENT STH. HERE
+    //#warning IMPLEMENT STH. HERE
+    //save current interrupt state
+	uint8_t GIEB = SREG & 0b10000000;
+	//disable interrupt,
+	SREG &= 0b01111111;
+	//deactivate scheduler
+    TIMSK2 &= 0b11111101;
+	//increment critical section count
+	criticalSectionCount++;
+	//apply old state
+	SREG|=GIEB;
 }
 
 /*!
@@ -322,7 +407,22 @@ void os_enterCriticalSection(void) {
  *  has to be reactivated.
  */
 void os_leaveCriticalSection(void) {
-    #warning IMPLEMENT STH. HERE
+    //#warning IMPLEMENT STH. HERE
+    //save current interrupt state
+	uint8_t GIEB = SREG & 0b10000000;
+	//disable interrupt
+	SREG &= 0b01111111;
+	//decrement critical section count
+	criticalSectionCount--;
+	//check if critical section count is zero / if were no longer in the critical section
+	if(criticalSectionCount == 0){
+		//activate scheduler
+		TIMSK2 |= 0b00000010;
+	}else if(criticalSectionCount<0) {
+	    os_error("Es existiert kein kritischer Bereiche.");
+    }C
+	//apply old state
+	SREG|=GIEB;
 }
 
 /*!
@@ -332,5 +432,18 @@ void os_leaveCriticalSection(void) {
  *  \return The checksum of the pid'th stack.
  */
 StackChecksum os_getStackChecksum(ProcessID pid) {
-    #warning IMPLEMENT STH. HERE
+    //#warning IMPLEMENT STH. HERE
+    StackPointer stackpntr =  ((*os_getProcessSlot(pid)).sp);
+	//create new stack pointer to iterate through stack
+	StackPointer bottom;
+	//set it to bottom of process stack
+	bottom.as_int = PROCESS_STACK_BOTTOM(pid);
+
+	StackChecksum checksum = *(bottom.as_ptr);
+	//iterate through the stack and update checksum
+	while( stackpntr.as_int < bottom.as_int){
+		bottom.as_int--;
+		checksum ^= *(bottom.as_ptr);
+	}
+	return checksum;
 }

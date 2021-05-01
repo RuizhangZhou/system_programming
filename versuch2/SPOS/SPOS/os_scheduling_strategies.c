@@ -36,7 +36,23 @@ void os_resetProcessSchedulingInformation(ProcessID id) {
  *  \return The next process to be executed determined on the basis of the even strategy.
  */
 ProcessID os_Scheduler_Even(Process const processes[], ProcessID current) {
-    #warning IMPLEMENT STH. HERE
+    //#warning IMPLEMENT STH. HERE
+    //set the count/next process id to current + 1
+	int count = current+1;
+	while(1){
+		//if were back at the current id return the current if its ready again, if not then the idle process
+		if(count == current){
+			if (processes[count].state == OS_PS_READY) return current;
+			else return 0;
+		}
+		//if its not the its not the current process and not idle then look if its ready
+		if(processes[count].state == OS_PS_READY && count!= 0) return count;
+		//go to next
+		count++;
+		//dont get out of bounds
+		count = count % MAX_NUMBER_OF_PROCESSES;
+	}
+	return 0;
 }
 
 /*!
@@ -48,7 +64,29 @@ ProcessID os_Scheduler_Even(Process const processes[], ProcessID current) {
  *  \return The next process to be executed determined on the basis of the random strategy.
  */
 ProcessID os_Scheduler_Random(Process const processes[], ProcessID current) {
-    #warning IMPLEMENT STH. HERE
+    //#warning IMPLEMENT STH. HERE
+    //count the currently ready process excluding the idle process
+	int count = 0;
+	for (int i = 0; i<MAX_NUMBER_OF_PROCESSES;i++)
+	{
+		if(processes[i].state == OS_PS_READY && i != 0)
+			count++;
+	}
+
+	//get a random number 
+	count = rand()%count;
+	//iterate the process array until we get the next process
+	for(int i = 0; i<MAX_NUMBER_OF_PROCESSES;i++){
+		//since were using a random number between 0 and count we can just check if the process[i] is ready and not idle process and if its true check if the new count is 0.  
+		if(processes[i].state==OS_PS_READY&&i!=0){
+			//if it is 0 then return the id
+			if(count == 0) return i;
+			//else decrement the count
+			count--;
+		}
+	}
+	//if there is no process ready then return the idle process id
+	return 0;
 }
 
 /*!

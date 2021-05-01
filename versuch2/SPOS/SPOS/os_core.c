@@ -143,6 +143,9 @@ void os_errorPStr(char const* str) {
     lcd_clear();
     lcd_writeProgString(PSTR(str)); // maybe * ?
 
+    //initialize Input
+	os_initInput();
+
     // ENTER + ESC -> button1 + button4 (what if other buttons are pressed?)
     while (!(os_getInput() & 0b1001 == 0b1001)) {//implies button 1,4 are not pushed,so we just waitForInput
         os_waitForInput();

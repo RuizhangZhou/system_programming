@@ -15,8 +15,8 @@
 #include <stdbool.h>
 
 //! The type for the ID of a running process.
-#warning IMPLEMENT STH. HERE
-typedef ? ProcessID;
+//#warning IMPLEMENT STH. HERE
+typedef uint8_t ProcessID;
 
 //! The type for the ID of a program.
 //#warning IMPLEMENT STH. HERE
@@ -57,7 +57,7 @@ typedef struct {
 	ProcessState state;
 	Priority priority;
 	StackPointer sp;
-	
+	StackChecksum checksum;
 } Process;
 
 //! This is the type of a program function (not the pointer to one!).
