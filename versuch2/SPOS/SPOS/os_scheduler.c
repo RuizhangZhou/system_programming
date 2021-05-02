@@ -305,10 +305,12 @@ void os_startScheduler(void) {
  */
 void os_initScheduler(void) {
     //#warning IMPLEMENT STH. HERE
-    ProcessID id = 0;
+    ProcessID id ;
     for(id=0; id<MAX_NUMBER_OF_PROCESSES; id++){
-	os_processes[id].state = OS_PS_UNUSED;
+		os_processes[id].state = OS_PS_UNUSED;
     }
+	
+
     for(uint8_t id=0; id<MAX_NUMBER_OF_PROGRAMS; id++){
         if(os_checkAutostartProgram(id)){
             os_exec(id,DEFAULT_PRIORITY);
