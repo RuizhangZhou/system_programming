@@ -69,13 +69,13 @@ ISR(TIMER2_COMPA_vect) __attribute__((naked));
  */
 ISR(TIMER2_COMPA_vect) {
     //#warning IMPLEMENT STH. HERE
-    //Laufzeitkontext auf dem Prozessstack des aktuellen Prozesses sichern     
+    //Laufzeitkontext auf dem Prozessstack des aktuellen Prozesses sichern //step 2    
 	saveContext();
 
-    //Stackpointers des aktuellen Prozesses sichern
+    //Stackpointers des aktuellen Prozesses sichern //step 3
 	os_processes[os_getCurrentProc()].sp.as_int = SP; 
 	
-	//Stackpointer auf den Scheduler-Stack setzen
+	//Stackpointer auf den Scheduler-Stack setzen//step 4
 	SP = BOTTOM_OF_ISR_STACK;
     
     os_initInput(); 
@@ -84,12 +84,12 @@ ISR(TIMER2_COMPA_vect) {
 		os_taskManMain();
 	}
 
-    //Prozesszustand des aktuellen Prozesses auf OS_PS_READY setzen
+    //Prozesszustand des aktuellen Prozesses auf OS_PS_READY setzen//step 5
 	os_processes[os_getCurrentProc()].state = OS_PS_READY; 
 
     os_processes[os_getCurrentProc()].checksum = os_getStackChecksum(os_getCurrentProc());
 
-    //Scheduling-Strategie fuer naechsten Prozess auswaehlen
+    //Scheduling-Strategie fuer naechsten Prozess auswaehlen//step 6
 	switch(os_getSchedulingStrategy()){
 		case OS_SS_EVEN:
 			currentProc = os_Scheduler_Even(os_processes,os_getCurrentProc());
@@ -108,7 +108,7 @@ ISR(TIMER2_COMPA_vect) {
 			break;
 	}
 
-    //Fortzusetzender Prozesszustand auf OS_PS_RUNNING setzen
+    //Fortzusetzender Prozesszustand auf OS_PS_RUNNING setzen//step 7
 	os_processes[os_getCurrentProc()].state = OS_PS_RUNNING;
 
     StackChecksum newChecksum = os_getStackChecksum(os_getCurrentProc());
@@ -116,9 +116,10 @@ ISR(TIMER2_COMPA_vect) {
 		os_error("Stack Inconsistency!");
 	}
 
-    //Stackpointer wiederherstellen
+    //Stackpointer wiederherstellen//step 8
     SP = os_processes[os_getCurrentProc()].sp.as_int;
     
+	//step 9 & 10
     restoreContext();
 
 }
@@ -438,7 +439,7 @@ void os_leaveCriticalSection(void) {
 		TIMSK2 |= 0b00000010;
 	}else if(criticalSectionCount<0) {
 	    os_error("Es existiert kein kritischer Bereiche.");
-    }
+    
 	//apply old state
 	SREG|=GIEB;
 }
