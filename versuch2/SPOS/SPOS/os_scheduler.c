@@ -294,9 +294,13 @@ ProcessID os_exec(ProgramID programID, Priority priority) {
  */
 void os_startScheduler(void) {
     //#warning IMPLEMENT STH. HERE
+	//1. Setzen der Variable für den aktuellen Prozess auf 0 (Leerlaufprozess)
     currentProc = 0;
+	//2. Den Zustand des Leerlaufprozesses auf OS_PS_RUNNING ändern
 	os_processes[0].state = OS_PS_RUNNING;
+	//3. Setzen des Stackpointers auf den Prozessstack des Leerlaufprozesses
 	SP = os_processes[0].sp.as_int;
+	//4. Sprung in den Leerlaufprozess mit restoreContext()
 	restoreContext();
 }
 
@@ -407,16 +411,16 @@ SchedulingStrategy os_getSchedulingStrategy(void) {
  */
 void os_enterCriticalSection(void) {
     //#warning IMPLEMENT STH. HERE
-    //save current interrupt state
-	uint8_t GIEB = SREG & 0b10000000;
-	//disable interrupt,
+    //1.save current interrupt state
+	uint8_t localGIEB = SREG & 0b10000000;
+	//2.disable interrupt,
 	SREG &= 0b01111111;
-	//deactivate scheduler
-    TIMSK2 &= 0b11111101;
-	//increment critical section count
+	//3.increment critical section count
 	criticalSectionCount++;
-	//apply old state
-	SREG|=GIEB;
+	//4.deactivate scheduler
+    TIMSK2 &= 0b11111101;
+	//5.apply old state
+	SREG|=localGIEB;
 }
 
 /*!
@@ -428,7 +432,7 @@ void os_enterCriticalSection(void) {
 void os_leaveCriticalSection(void) {
     //#warning IMPLEMENT STH. HERE
     //save current interrupt state
-	uint8_t GIEB = SREG & 0b10000000;
+	uint8_t localGIEB = SREG & 0b10000000;
 	//disable interrupt
 	SREG &= 0b01111111;
 	//decrement critical section count
@@ -438,10 +442,10 @@ void os_leaveCriticalSection(void) {
 		//activate scheduler
 		TIMSK2 |= 0b00000010;
 	}else if(criticalSectionCount<0) {
-	    os_error("Es existiert kein kritischer Bereiche.");
+	    os_error("os_leaveCriticalSection wurde häufiger aufgerufen,als os_enterCriticalSection");
     
 	//apply old state
-	SREG|=GIEB;
+	SREG|=localGIEB;
 }
 
 /*!

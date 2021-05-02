@@ -37,22 +37,19 @@ void os_resetProcessSchedulingInformation(ProcessID id) {
  */
 ProcessID os_Scheduler_Even(Process const processes[], ProcessID current) {
     //#warning IMPLEMENT STH. HERE
-    //set the count/next process id to current + 1
-	int count = current+1;
-	while(1){
-		//if were back at the current id return the current if its ready again, if not then the idle process
-		if(count == current){
-			if (processes[count].state == OS_PS_READY) return current;
-			else return 0;
+    uint8_t nextProc = (current + 1) % MAX_NUMBER_OF_PROCESSES;
+	while (nextProc != current) {
+		if (processes[nextProc].state == OS_PS_READY && nextProc != 0) {
+			return nextProc;
 		}
-		//if its not the its not the current process and not idle then look if its ready
-		if(processes[count].state == OS_PS_READY && count!= 0) return count;
-		//go to next
-		count++;
-		//dont get out of bounds
-		count = count % MAX_NUMBER_OF_PROCESSES;
+		nextProc = (nextProc + 1) % MAX_NUMBER_OF_PROCESSES;
 	}
-	return 0;
+	//here represents all other Processes(not include processes[0],as this represents the Leerlaufprozess) in the processes are not ready
+	if (processes[nextProc].state == OS_PS_READY) {
+		return nextProc;
+	} else {//all Processes are not ready, now run the Leerlaufprozess
+		return 0;
+	}
 }
 
 /*!
@@ -66,8 +63,8 @@ ProcessID os_Scheduler_Even(Process const processes[], ProcessID current) {
 ProcessID os_Scheduler_Random(Process const processes[], ProcessID current) {
     //#warning IMPLEMENT STH. HERE
     //count the currently ready process excluding the idle process
-	int count = 0;
-	for (int i = 0; i<MAX_NUMBER_OF_PROCESSES;i++)
+	uint8_t count = 0;
+	for (uint8_t i = 0; i<MAX_NUMBER_OF_PROCESSES;i++)
 	{
 		if(processes[i].state == OS_PS_READY && i != 0)
 			count++;
@@ -76,7 +73,7 @@ ProcessID os_Scheduler_Random(Process const processes[], ProcessID current) {
 	//get a random number 
 	count = rand()%count;
 	//iterate the process array until we get the next process
-	for(int i = 0; i<MAX_NUMBER_OF_PROCESSES;i++){
+	for(uint8_t i = 0; i<MAX_NUMBER_OF_PROCESSES;i++){
 		//since were using a random number between 0 and count we can just check if the process[i] is ready and not idle process and if its true check if the new count is 0.  
 		if(processes[i].state==OS_PS_READY&&i!=0){
 			//if it is 0 then return the id
