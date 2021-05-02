@@ -31,7 +31,7 @@ Program* os_programs[MAX_NUMBER_OF_PROGRAMS];//Program *os_programs[MAX_NUMBER_O
 
 //! Index of process that is currently executed (default: idle)
 //#warning IMPLEMENT STH. HERE
-ProcessID currectProc;
+ProcessID currentProc;
 
 //----------------------------------------------------------------------------
 // Private variables
@@ -273,11 +273,11 @@ ProcessID os_exec(ProgramID programID, Priority priority) {
 	newProcessPtr->sp.as_ptr--;//
 	
 	for(uint8_t i = 0; i < 33; i++){
-		*(newProcess->sp.as_ptr) = 0b00000000;//all set as 0b00000000
-		newProcess->sp.as_ptr--;//every register including SREG are 8 bits.
+		*(newProcessPtr->sp.as_ptr) = 0b00000000;//all set as 0b00000000
+		newProcessPtr->sp.as_ptr--;//every register including SREG are 8 bits.
 	}
 	
-    newProcess->checksum = os_getStackChecksum(pid);
+    newProcessPtr->checksum = os_getStackChecksum(pid);
 	//set age of process to 0 and leave critical section
 	os_resetProcessSchedulingInformation(pid);
     os_leaveCriticalSection();
@@ -438,7 +438,7 @@ void os_leaveCriticalSection(void) {
 		TIMSK2 |= 0b00000010;
 	}else if(criticalSectionCount<0) {
 	    os_error("Es existiert kein kritischer Bereiche.");
-    }C
+    }
 	//apply old state
 	SREG|=GIEB;
 }

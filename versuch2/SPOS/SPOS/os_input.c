@@ -20,6 +20,7 @@ Everything that is necessary to get the input from the Buttons in a clean format
  */
 uint8_t os_getInput(void) {
     const uint8_t pressed = ~PINC & 0b11000011;
+	//when button is pressed this bit is 0,so need to (~PINC) then & 0b11000011
 	return (pressed & 0b00000011) | (pressed >> 4);
 }
 

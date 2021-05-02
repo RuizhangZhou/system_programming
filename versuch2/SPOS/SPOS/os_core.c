@@ -141,13 +141,14 @@ void os_errorPStr(char const* str) {
     
     SREG &= 0b01111111;//deaktiviert die Interrupts global
     lcd_clear();
-    lcd_writeProgString(PSTR(str)); // maybe * ?
+    lcd_writeString(str);
+	//lcd_writeProgString(PSTR(str)); // maybe * ?//this way compiling with error
 
     //initialize Input
 	os_initInput();
 
     // ENTER + ESC -> button1 + button4 (what if other buttons are pressed?)
-    while (!(os_getInput() & 0b1001 == 0b1001)) {//implies button 1,4 are not pushed,so we just waitForInput
+    while (os_getInput() != 0b00001001) {//implies button 1,4 are not pushed,so we just waitForInput
         os_waitForInput();
     }
     os_waitForNoInput();
