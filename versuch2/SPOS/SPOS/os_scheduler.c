@@ -77,9 +77,12 @@ ISR(TIMER2_COMPA_vect) {
 	
 	//Stackpointer auf den Scheduler-Stack setzen//step 4
 	SP = BOTTOM_OF_ISR_STACK;
+	
+	//nach dem Setzen des Stackpointers auf den Scheduler-Stack die Prüfsumme des Prozessstacks des unterbrochenen Prozesses ermittelt und abspeichert.
+    os_processes[os_getCurrentProc()].checksum = os_getStackChecksum(os_getCurrentProc());
     
-    os_initInput(); 
-    if((os_getInput() & 0b10000001) == 0b10000001) {
+	os_initInput(); 
+    if((os_getInput() == 0b00001001) {
 		os_waitForNoInput();
 		os_taskManMain();
 	}
@@ -87,7 +90,7 @@ ISR(TIMER2_COMPA_vect) {
     //Prozesszustand des aktuellen Prozesses auf OS_PS_READY setzen//step 5
 	os_processes[os_getCurrentProc()].state = OS_PS_READY; 
 
-    os_processes[os_getCurrentProc()].checksum = os_getStackChecksum(os_getCurrentProc());
+    
 
     //Scheduling-Strategie fuer naechsten Prozess auswaehlen//step 6
 	switch(os_getSchedulingStrategy()){
@@ -111,10 +114,10 @@ ISR(TIMER2_COMPA_vect) {
     //Fortzusetzender Prozesszustand auf OS_PS_RUNNING setzen//step 7
 	os_processes[os_getCurrentProc()].state = OS_PS_RUNNING;
 
-    StackChecksum newChecksum = os_getStackChecksum(os_getCurrentProc());
-    if(os_processes[os_getCurrentProc()].checksum != newChecksum) {
-		os_error("Stack Inconsistency!");
-	}
+    // Pr�fen, ob die Stack Checksumme immer noch passt
+    if (os_processes[currentProc].checksum != os_getStackChecksum(currentProc)) {
+	    os_error("Stack Inconsistency!");
+    }
 
     //Stackpointer wiederherstellen//step 8
     SP = os_processes[os_getCurrentProc()].sp.as_int;
@@ -237,13 +240,14 @@ ProcessID os_exec(ProgramID programID, Priority priority) {
 			break;
 		}
         if (i>=MAX_NUMBER_OF_PROCESSES){
-	    os_leaveCriticalSection();
-	    return INVALID_PROCESS;
-    }
+			os_leaveCriticalSection();
+			return INVALID_PROCESS;
+		}
 	}
 	
 	//Wenn kein Platz gefunden worden ist, dann ist freeIndex immer noch -1 und wir koennen hier rausquitten
 	if(freeIndex == -1){
+		os_leaveCriticalSection();
 		return INVALID_PROCESS;	
 	}
 		
@@ -283,8 +287,6 @@ ProcessID os_exec(ProgramID programID, Priority priority) {
 	os_resetProcessSchedulingInformation(pid);
     os_leaveCriticalSection();
 	return pid;
-	
-	
 }
 
 /*!
@@ -431,6 +433,11 @@ void os_enterCriticalSection(void) {
  */
 void os_leaveCriticalSection(void) {
     //#warning IMPLEMENT STH. HERE
+	if(criticalSectionCount <= 0){
+		os_error("leaveCritSec count error");
+		return;
+	}
+	
     //save current interrupt state
 	uint8_t localGIEB = SREG & 0b10000000;
 	//disable interrupt
@@ -441,9 +448,7 @@ void os_leaveCriticalSection(void) {
 	if(criticalSectionCount == 0){
 		//activate scheduler
 		TIMSK2 |= 0b00000010;
-	}else if(criticalSectionCount<0) {
-	    os_error("os_leaveCriticalSection wurde häufiger aufgerufen,als os_enterCriticalSection");
-    
+	}
 	//apply old state
 	SREG|=localGIEB;
 }
@@ -456,7 +461,7 @@ void os_leaveCriticalSection(void) {
  */
 StackChecksum os_getStackChecksum(ProcessID pid) {
     //#warning IMPLEMENT STH. HERE
-    StackPointer stackpntr =  ((*os_getProcessSlot(pid)).sp);
+    StackPointer stackptr =  os_processes[pid].sp;
 	//create new stack pointer to iterate through stack
 	StackPointer bottom;
 	//set it to bottom of process stack
@@ -464,7 +469,7 @@ StackChecksum os_getStackChecksum(ProcessID pid) {
 
 	StackChecksum checksum = *(bottom.as_ptr);
 	//iterate through the stack and update checksum
-	while( stackpntr.as_int < bottom.as_int){
+	while( stackptr.as_int < bottom.as_int){
 		bottom.as_int--;
 		checksum ^= *(bottom.as_ptr);
 	}
