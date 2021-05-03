@@ -81,7 +81,7 @@ ISR(TIMER2_COMPA_vect) {
 	//nach dem Setzen des Stackpointers auf den Scheduler-Stack die Prüfsumme des Prozessstacks des unterbrochenen Prozesses ermittelt und abspeichert.
     os_processes[os_getCurrentProc()].checksum = os_getStackChecksum(os_getCurrentProc());
     
-	os_initInput(); 
+	
     if(os_getInput() == 0b00001001) {
 		os_waitForNoInput();
 		os_taskManMain();
