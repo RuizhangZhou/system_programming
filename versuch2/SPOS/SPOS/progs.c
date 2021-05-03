@@ -1,5 +1,5 @@
 //-------------------------------------------------
-//          TestSuite: Multiple
+//          TestSuite: Stack Consistency
 //-------------------------------------------------
 
 #include "lcd.h"
@@ -8,54 +8,74 @@
 #include "os_scheduler.h"
 
 #include <avr/interrupt.h>
+#include <stdint.h>
 
-#define DELAY 1000
+#define DELAY 100
 
 /*!
- * Program that spawns several instances of the same
- * program
+ * Function that is called by both processes. Only one process proceeds and writes
+ * into the other's stack. The other one stays traped in an infinite loop.
+ *
+ * \param mine points to the address of a variable on the stack of this process
+ * \param his points to the address of a variable on the stack of the other process
+ * \param dummy points to the variable of the process that has called this function
  */
-PROGRAM(1, AUTOSTART) {
-    // Start 4 instances of program 2
-    uint8_t x;
-    for (x = 0; x < 12; x++) {
-        cli();
-        // Output identity
-        lcd_writeChar(' ');
-        lcd_writeChar('1');
+void dumper(uint16_t* mine, uint16_t volatile const* his, uint8_t const* dummy) {
+    // Initialize process specific pointer
+    os_enterCriticalSection();
+    *mine = (uint16_t)dummy;
+    os_leaveCriticalSection();
 
-        // Spawn a new process every third time
-        if (!(x % 3)) {
-            os_exec(2, DEFAULT_PRIORITY);
-            lcd_writeChar('!');
-            lcd_writeChar(';');
+    // Wait for other process
+    while (!*his);
+
+    // Only one process may continue
+    if (*mine < *his) {
+        for (;;);
+    }
+    // Print which one did continue
+    lcd_writeChar(*dummy);
+    lcd_writeChar(':');
+    lcd_writeChar(' ');
+
+    // Compute the number of bytes in between and reduce it by some.
+    unsigned i = *mine - *his - 24;
+
+    // Now iterate up and flip the bits of the chosen byte till the other stack gets hit.
+    // That should cause a stack inconsistency.
+    while (++i) {
+        lcd_writeDec(i);
+        {
+            // Choose byte using an array of the right size.
+            uint8_t arr[i];
+
+            // Flip bits
+            *arr ^= 0xFF;
         }
-        sei();
-        delayMs(DELAY);
-    }
-    for (;;) {
+        lcd_writeChar(';');
         lcd_writeChar(' ');
-        lcd_writeChar('1');
-        delayMs(DELAY);
+        delayMs(3 * DELAY);
     }
+
+    /* 
+	 * If no inconsistency is reported it is considered broken. This will most likely
+     * never happen because "i" is of type uint16_t with a max. value of 65535.
+     * The code will just crash and start rebooting SPOS, which is acceptable at this
+     * point because the inconsistency should've been detected long ago.
+     */
+    os_error("Consistency check broken");
+}
+
+// Variables to store addresses to the processe's stack variable
+uint16_t p1 = 0;
+uint16_t p2 = 0;
+
+PROGRAM(1, AUTOSTART) {
+    uint8_t i = '1';
+    dumper(&p1, &p2, &i);
 }
 
 PROGRAM(2, AUTOSTART) {
-    cli();
-    // Mark each instance with unique character
-    static char siblings = 'a';
-    char whoami = siblings;
-    siblings++;
-    sei();
-
-    for (;;) {
-        cli();
-        // Output identity
-        lcd_writeChar(' ');
-        lcd_writeChar('2');
-        lcd_writeChar(whoami);
-        lcd_writeChar(';');
-        sei();
-        delayMs(DELAY);
-    }
+    uint8_t i = '2';
+    dumper(&p2, &p1, &i);
 }
