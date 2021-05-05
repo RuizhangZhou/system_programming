@@ -1,0 +1,13 @@
+<map id="atmega644constants.h" name="atmega644constants.h">
+<area shape="rect" id="node1" title="Constants for ATMega644 and EVA board. Defines several useful constants for the ATMega644." alt="" coords="651,5,821,32"/>
+<area shape="rect" id="node2" href="$defines_8h.html" title="Simple definitions and assembler&#45;macros, mostly 8/16&#45;Bit values." alt="" coords="598,80,679,107"/>
+<area shape="rect" id="node7" href="$util_8c.html" title=" " alt="" coords="806,229,861,256"/>
+<area shape="rect" id="node3" href="$lcd_8h.html" title="Library for LCD use." alt="" coords="691,155,744,181"/>
+<area shape="rect" id="node4" href="$os__core_8c.html" title=" " alt="" coords="597,229,680,256"/>
+<area shape="rect" id="node6" href="$os__taskman_8c.html" title=" " alt="" coords="576,304,688,331"/>
+<area shape="rect" id="node8" href="$os__scheduler_8h.html" title="Scheduling module for the OS." alt="" coords="322,155,441,181"/>
+<area shape="rect" id="node9" href="$os__scheduling__strategies_8h.html" title="Scheduling library for the OS." alt="" coords="95,229,294,256"/>
+<area shape="rect" id="node10" href="$os__scheduling__strategies_8c.html" title=" " alt="" coords="5,304,203,331"/>
+<area shape="rect" id="node11" href="$os__user__privileges_8h.html" title="User privileges specification used in part by the Taskman." alt="" coords="419,229,573,256"/>
+<area shape="rect" id="node5" href="$os__scheduler_8c.html" title=" " alt="" coords="272,304,389,331"/>
+</map>
