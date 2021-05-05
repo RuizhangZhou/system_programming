@@ -141,7 +141,7 @@ void os_errorPStr(char const* str) {
     
     SREG &= 0b01111111;//deaktiviert die Interrupts global
     lcd_clear();
-    lcd_writeString(str);
+    lcd_writeProgString(str);
 	//lcd_writeProgString(PSTR(str)); // maybe * ?// lcd_writeProgString(PSTR) compiling with error
 
     //initialize Input
