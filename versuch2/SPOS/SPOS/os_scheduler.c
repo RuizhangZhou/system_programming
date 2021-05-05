@@ -184,7 +184,7 @@ PROGRAM(0, AUTOSTART) {
  */
 Program* os_lookupProgramFunction(ProgramID programID) {
     // Return NULL if the index is out of range
-    if (programID >= MAX_NUMBER_OF_PROGRAMS) {
+    if ((programID >= MAX_NUMBER_OF_PROGRAMS) || (programID < 0)) {
         return NULL;
     }
 
@@ -239,13 +239,9 @@ ProcessID os_exec(ProgramID programID, Priority priority) {
 			freeIndex = i;
 			break;
 		}
-        if (i>=MAX_NUMBER_OF_PROCESSES){
-			os_leaveCriticalSection();
-			return INVALID_PROCESS;
-		}
 	}
 	
-	//Wenn kein Platz gefunden worden ist, dann ist freeIndex immer noch -1 und wir koennen hier rausquitten
+	// If freeIndex -1 then no free place in  array found and we can return INVALID_PROCESS
 	if(freeIndex == -1){
 		os_leaveCriticalSection();
 		return INVALID_PROCESS;	
@@ -268,9 +264,9 @@ ProcessID os_exec(ProgramID programID, Priority priority) {
 	
 	//the address of PC register(Programmzaehler)is 16 bits.
 	uint8_t low_byte= ((uint16_t)currentProgramPointer) & 0xff;
-    //uint8_t automatisch abandon the higher 8 bits//can I just: uint8_t low_byte= (uint16_t)currentProgramPointer?
+    //uint8_t automatically abandon the higher 8 bits //can I just: uint8_t low_byte = (uint16_t)currentProgramPointer?
 	uint8_t high_byte= ((uint16_t)currentProgramPointer) >> 8;
-    // move the higher 8 bits to the lower position, and the uint8_t automatisch take the lower 8 bits
+    // move the higher 8 bits to the lower position, and the uint8_t then takes the lower 8 bits
 	
 	*(newProcessPtr->sp.as_ptr)=low_byte;
 	newProcessPtr->sp.as_ptr--;
@@ -278,8 +274,8 @@ ProcessID os_exec(ProgramID programID, Priority priority) {
 	newProcessPtr->sp.as_ptr--;//
 	
 	for(uint8_t i = 0; i < 33; i++){
-		*(newProcessPtr->sp.as_ptr) = 0b00000000;//all set as 0b00000000
-		newProcessPtr->sp.as_ptr--;//every register including SREG are 8 bits.
+		*(newProcessPtr->sp.as_ptr) = 0b00000000; //all set as 0b00000000
+		newProcessPtr->sp.as_ptr--; // Dekrement stackpointer // alternative: set by PROCESS_STACK_BOTTOM(PID)
 	}
 	
     newProcessPtr->checksum = os_getStackChecksum(pid);
