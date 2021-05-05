@@ -1,14 +1,15 @@
 #include <avr/io.h>
 #include "button.h"
+#include "led.h"
 #include "lcd.h"
-#include "pointer.h"
 
 
-int main(void){
+int main(void)
+{
 	
 	
     //LED
-    //led_init();
+    led_init();
     
     //Buttons
     initInput();
@@ -17,8 +18,8 @@ int main(void){
     
     while(1)
     {
-	    buttonTest();
-	    //led_fun();
+	    //buttonTest();
+	    led_fun();
 	    //convert();
 	    //loop();
 	    //shift();
