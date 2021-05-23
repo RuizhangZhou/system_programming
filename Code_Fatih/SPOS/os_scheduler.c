@@ -1,7 +1,7 @@
 /*! \file
  *  \brief Scheduling-Modul
  *
- *  Enthält zentrale ISR
+ *  Enthï¿½lt zentrale ISR
  *
  *  \author   Fatih
  *  \date     2020
@@ -73,7 +73,7 @@ ISR(TIMER2_COMPA_vect) {
 	 * 1. Program Counter 
 	 * 2. Laufzeitkontext (32 Register + Statusregister)
 	 *
-	 * Zu 1: Passiert automatisch, wenn ISR ausgeführt wird
+	 * Zu 1: Passiert automatisch, wenn ISR ausgefï¿½hrt wird
 	 * Zu 2: Kann einfach erledigt werden, durch Aufruf von saveContext()
 	*/
 
@@ -88,7 +88,7 @@ ISR(TIMER2_COMPA_vect) {
 	SP = BOTTOM_OF_ISR_STACK;
 
 	/*
-	 * Prozesszustand des alten Prozesses ändern auf READY, falls er lief.
+	 * Prozesszustand des alten Prozesses ï¿½ndern auf READY, falls er lief.
 	 * Das bedeutet insbesondere, dass ein Prozess, der UNUSED (terminiert)
 	 * ist, nicht wieder auf READY gesetzt wird.
 	 */
@@ -99,7 +99,7 @@ ISR(TIMER2_COMPA_vect) {
 	}
 
 
-   // Prüfen, ob der Taskmanager aufgerufen werden soll
+   // Prï¿½fen, ob der Taskmanager aufgerufen werden soll
    // Der Taskmanager wird via ESC + Enter aufgerufen
    os_initInput();
    if((os_getInput() & 0b00001001) == 0b00001001){
@@ -108,15 +108,15 @@ ISR(TIMER2_COMPA_vect) {
    }
    
    /* Wiederherstellung eines neuen Prozesses (in folgender Reihenfolge):
-    * 1. Auswählen des neuen Prozesses (abhängig von Scheduling Strategy)
+    * 1. Auswï¿½hlen des neuen Prozesses (abhï¿½ngig von Scheduling Strategy)
 	* 2. gesicherten Stackpointer ins SP-Register schreiben
 	* 3. Laufzeitkontext (32 Register + Statusregister) wiederherstellen
 	* 4. Program Counter neu setzen
 	*
-	* Zu 3&4: Beide Schritte können mit der Methode restoreContext() durchgeführt werden
+	* Zu 3&4: Beide Schritte kï¿½nnen mit der Methode restoreContext() durchgefï¿½hrt werden
    */
    
-	// Mithilfe der ausgewählten Scheduling Strategy den neuen auszuführenden Prozess bestimmen
+	// Mithilfe der ausgewï¿½hlten Scheduling Strategy den neuen auszufï¿½hrenden Prozess bestimmen
 	switch (os_getSchedulingStrategy()) {
 		case OS_SS_EVEN:
 			currentProc = os_Scheduler_Even(os_processes, os_getCurrentProc());
@@ -148,7 +148,7 @@ ISR(TIMER2_COMPA_vect) {
 	// Neuen Prozess auf RUNNING setzen
 	os_processes[currentProc].state = OS_PS_RUNNING;
 	
-	// Prüfen, ob die Stack Checksumme immer noch passt
+	// Prï¿½fen, ob die Stack Checksumme immer noch passt
 	if (os_processes[currentProc].checksum != os_getStackChecksum(currentProc)) {
 		os_error(" INVALID  STACK     CHECKSUM");
 	}
@@ -273,7 +273,7 @@ ProcessID os_exec(ProgramID programID, Priority priority) {
 		}
 	}
 
-	//Wenn kein Platz gefunden worden ist, dann ist freeIndex immer noch -1 und wir können hier rausquitten
+	//Wenn kein Platz gefunden worden ist, dann ist freeIndex immer noch -1 und wir kï¿½nnen hier rausquitten
 	if(freeIndex == -1){
 		os_leaveCriticalSection();
 		return INVALID_PROCESS;	//Rage quit
@@ -294,13 +294,13 @@ ProcessID os_exec(ProgramID programID, Priority priority) {
 	newProcess->sp.as_int = PROCESS_STACK_BOTTOM(freeIndex);
 
 	/* Stack vorbereiten
-	 * Auf den leeren Stack müssen wir folgende Daten ablegen (in dieser Reihenfolge):
+	 * Auf den leeren Stack mï¿½ssen wir folgende Daten ablegen (in dieser Reihenfolge):
 	 * 1. LOW-Bytes des Funktionszeigers
 	 * 2. HIGH-Bytes des Funktionszeigers
 	 * 3. Statusregister SREG
 	 * 4. Die 32 Register 
 	 * (Alle Register (inkl. Statusregister) sollen mit 0 inizialisiert werden
-	 * (5. Wir müssen ausserdem die Checksumme des Stacks berechnen)
+	 * (5. Wir mï¿½ssen ausserdem die Checksumme des Stacks berechnen)
 	*/
 	
 	// funktionszeiger (Typ: void) -> uint16_t
@@ -317,7 +317,7 @@ ProcessID os_exec(ProgramID programID, Priority priority) {
 	*(newProcess->sp.as_ptr) = bytesDesFunktionsregisters[0];  // HIGH Bytes
 	newProcess->sp.as_int--;
 	
-	//Da alle Register mit 0 inizialisiert werden sollen, können wir 33x 8-Bit mit 0en füllen
+	//Da alle Register mit 0 inizialisiert werden sollen, kï¿½nnen wir 33x 8-Bit mit 0en fï¿½llen
 	for(uint8_t i = 0; i < 33; i++){
 		*(newProcess->sp.as_ptr) = 0b00000000;
 		newProcess->sp.as_int--;
@@ -341,7 +341,7 @@ ProcessID os_exec(ProgramID programID, Priority priority) {
  */
 void os_startScheduler(void) {
 	/* Startet den Scheduler, welcher als erstes den Leerlaufprozess starten soll.
-	 * Dafür folgende Schritte:
+	 * Dafï¿½r folgende Schritte:
 	 * 1. Setzen der currentProc Variable auf 0 (Leerlaufprozess hat immer die ID 0)
 	 * 2. Den Zustand des Prozesses auf RUNNING setzen
 	 * 3. SP-Register auf Stackpointer des Prozesses setzen
@@ -368,12 +368,12 @@ void os_initScheduler(void) {
 	//Durchlaufen aller Programme um Autostart-Programme zu starten
 	for(uint8_t progID = 0; progID < MAX_NUMBER_OF_PROGRAMS; progID++){
 		
-		//Prüfen ob Programmfunktion = NULL ist -> continue
+		//Prï¿½fen ob Programmfunktion = NULL ist -> continue
 		if(os_lookupProgramFunction(progID) == NULL){
 			continue;
 		}
 		
-		//Prüfen ob Programm automatisch gestartet werden soll
+		//Prï¿½fen ob Programm automatisch gestartet werden soll
 		if(os_checkAutostartProgram(progID)){
 			os_exec(progID, DEFAULT_PRIORITY);
 		}
@@ -464,7 +464,7 @@ SchedulingStrategy os_getSchedulingStrategy(void) {
  *  This function supports up to 255 nested critical sections.
  */
 void os_enterCriticalSection(void) {
-    /* Folgende Schritte müssen durchgeführt werden:
+    /* Folgende Schritte mï¿½ssen durchgefï¿½hrt werden:
 	 * 1. Sichern des Global Interrupt Enable Bit aus SREG
 	 * 2. Setzen des Global Interrupt Enable Bit auf 0
 	 * 3. criticalSectionCount++
@@ -499,8 +499,8 @@ void os_enterCriticalSection(void) {
  */
 void os_leaveCriticalSection(void) {
 	
-	/* Folgende Schritte müssen durchgeführt werden:
-	 * 0. Prüfen, ob wir eine critSecCount < 0 erreichen würden
+	/* Folgende Schritte mï¿½ssen durchgefï¿½hrt werden:
+	 * 0. Prï¿½fen, ob wir eine critSecCount < 0 erreichen wï¿½rden
 	 * 1. Sichern des MSB aus dem SREG in einer lokalen Variable
 	 * 2. Setzen des MSB im SREG auf 0
 	 * 3. criticalSectionCount--
@@ -522,7 +522,7 @@ void os_leaveCriticalSection(void) {
 	criticalSectionCount--;
 	
 	// Wenn die criticalSectionCount nach Erniedrigung = 0 ist, dann haben wir alle CritSecs verlassen
-	// und können den Timer wieder aktivieren
+	// und kï¿½nnen den Timer wieder aktivieren
 	if(criticalSectionCount == 0){
 		TIMSK2 |= 0b00000010;
 	}
@@ -539,7 +539,7 @@ void os_leaveCriticalSection(void) {
  */
 StackChecksum os_getStackChecksum(ProcessID pid) {
      /*  Es sollen alle Bits zwischen Anfang des Stacks und Stackpointer
-	 *  zur Berechnung des Hashes mit XOR verknüpft werden
+	 *  zur Berechnung des Hashes mit XOR verknï¿½pft werden
 	 */
 	
 	StackPointer untereGrenze;
@@ -588,20 +588,20 @@ bool os_kill(ProcessID pid) {
 	 * in der critical section sein.
 	 *
 	 * Falls der zu killende Prozesse drin ist, muss er sie verlassen.
-	 * Falls ein anderer Prozess läuft und einen anderen killt, kann der nicht
-	 * in der critical section sein, deshalb müssen wir die nicht freigeben.
+	 * Falls ein anderer Prozess lï¿½uft und einen anderen killt, kann der nicht
+	 * in der critical section sein, deshalb mï¿½ssen wir die nicht freigeben.
 	 */
 	while (pid == currentProc && criticalSectionCount > 1) {
 		os_leaveCriticalSection();
 	}
 
-	// os_processes aufräumen
+	// os_processes aufrï¿½umen
 	os_processes[pid].state = OS_PS_UNUSED;
 	os_processes[pid].progID = 0;
 	os_processes[pid].priority = 0;
 	os_processes[pid].sp.as_int = 0;
 
-	// timeslice auf 0 u.ä.
+	// timeslice auf 0 u.ï¿½.
 	os_resetProcessSchedulingInformation(pid);
 	os_removeFromMlfq(pid);
 
@@ -613,7 +613,7 @@ bool os_kill(ProcessID pid) {
 		os_leaveCriticalSection();
 		return true;
 	}
-	// Falls sich Prozess selbst beendet, muss anderes Programm ausgeführt
+	// Falls sich Prozess selbst beendet, muss anderes Programm ausgefï¿½hrt
 	// werden.
 	os_leaveCriticalSection();
 	// ruft scheduler explizit auf
@@ -642,7 +642,7 @@ void os_yield() {
 	
 	os_processes[currentProc].state = OS_PS_BLOCKED;
 	
-	// Stellen Sie vor dem manuellen Auf-ruf des Schedulers außerdem sicher,
+	// Stellen Sie vor dem manuellen Auf-ruf des Schedulers auï¿½erdem sicher,
 	// dass der Scheduler auch weiterhin automatisch durch Timerinterrupts aufgerufen wird.
 	TIMSK2 |= 0b00000010;
 	
@@ -655,7 +655,7 @@ void os_yield() {
 	// vorherigen Zustand wiederherstellen
 	criticalSectionCount = currentCritSecLvl;
 
-	// stellt GIEB wieder her, lässt rest von SREG so wie's is.
+	// stellt GIEB wieder her, lï¿½sst rest von SREG so wie's is.
 	SREG = currentGieb | (SREG & 0b0111111);
 	
 	os_leaveCriticalSection();

@@ -33,13 +33,13 @@
     #define delayMs(TIME) _delay_ms(TIME)
 
     //! DDR of Port connected to LCD
-    #define LCD_PORT_DDR DDRB
+    #define LCD_PORT_DDR DDRA
 
     //! PORT connected to LCD
-    #define LCD_PORT_DATA PORTB
+    #define LCD_PORT_DATA PORTA
 
     //! PIN connected to LCD
-    #define LCD_PIN PINB
+    #define LCD_PIN PINA
 #else // Versuch 2+
     #include "defines.h"
     #include "util.h"

@@ -27,8 +27,8 @@ int main(void)
 	
 	while(1)
     {
-		buttonTest();
-		//led_fun();
+		//buttonTest();
+		led_fun();
 		//convert();
 		//loop();
 		//shift();	
