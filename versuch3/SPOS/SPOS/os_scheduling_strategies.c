@@ -12,6 +12,16 @@
  */
 void os_resetSchedulingInformation(SchedulingStrategy strategy) {
     // This is a presence task
+	if (strategy == OS_SS_ROUND_ROBIN) {
+		schedulingInfo.timeSlice = os_getProcessSlot(os_getCurrentProc())->priority;
+	} else {
+		schedulingInfo.timeSlice = 0;
+	}
+	if (strategy == OS_SS_INACTIVE_AGING) {
+		for(int i = 0; i < MAX_NUMBER_OF_PROCESSES; i++) {
+			os_resetProcessSchedulingInformation(i);
+		}
+	}
 }
 
 /*!
@@ -23,6 +33,7 @@ void os_resetSchedulingInformation(SchedulingStrategy strategy) {
  */
 void os_resetProcessSchedulingInformation(ProcessID id) {
     // This is a presence task
+	schedulingInfo.age[id] = 0;
 }
 
 /*!
@@ -75,7 +86,7 @@ ProcessID os_Scheduler_Random(Process const processes[], ProcessID current) {
 	//iterate the process array until we get the next process
 	for(uint8_t i = 0; i<MAX_NUMBER_OF_PROCESSES;i++){
 		//since were using a random number between 0 and count we can just check if the process[i] is ready and not idle process and if its true check if the new count is 0.  
-		if(processes[i].state==OS_PS_READY&&i!=0){
+		if (processes[i].state==OS_PS_READY&&i!=0) {
 			//if it is 0 then return the id
 			if(count == 0) return i;
 			//else decrement the count
@@ -99,7 +110,16 @@ ProcessID os_Scheduler_Random(Process const processes[], ProcessID current) {
  */
 ProcessID os_Scheduler_RoundRobin(Process const processes[], ProcessID current) {
     // This is a presence task
-    return 0;
+
+	// Decrement time slice
+	schedulingInfo.timeSlice--;
+
+	if (schedulingInfo.timeSlice < 1 || !os_isRunnable(processes[current])) {
+		ProcessID nextProc = os_Scheduler_Even(processes, current);
+		schedulingInfo.timeSlice = processes[current].priority;
+		return nextProc;
+	}
+	return current;
 }
 
 /*!
@@ -115,7 +135,39 @@ ProcessID os_Scheduler_RoundRobin(Process const processes[], ProcessID current) 
  */
 ProcessID os_Scheduler_InactiveAging(Process const processes[], ProcessID current) {
     // This is a presence task
-    return 0;
+	for (uint8_t i = 1; i < MAX_NUMBER_OF_PROCESSES; i++) {
+		if (i != current && processes[i].state == OS_PS_READY) {
+			schedulingInfo.age[i] += processes[i].priority;
+		}
+	}
+
+	ProcessID nextProc = 1;
+	for (uint8_t i = 2; i < MAX_NUMBER_OF_PROCESSES; i++) {
+		if (processes[i] != OS_PS_READY) {
+			continue;
+		}
+		if (schedulingInfo.age[i] > schedulingInfo.age[nextProc]) {
+			nextProc = i;
+		}
+		else if (schedulingInfo.age[i] == schedulingInfo.age[nextProc]) {
+			if (processes[i].priority > processes[nextProc].priority) {
+				nextProc = i;
+			}
+			else if (processes[i].priority == processes[nextProc].priority) {
+				if (i < nextProc) {
+					nextProc = i;
+				}
+			}
+		}
+	}
+
+	// In case no other process is ready to run we select the Leerlaufprocess
+	if (processes[nextProc].state != OS_PS_READY) {
+		return 0;
+	}
+
+	schedulingInfo.age[nextProc] = processes[nextProc].priority;
+    return nextProc;
 }
 
 /*!
@@ -129,5 +181,8 @@ ProcessID os_Scheduler_InactiveAging(Process const processes[], ProcessID curren
  */
 ProcessID os_Scheduler_RunToCompletion(Process const processes[], ProcessID current) {
     // This is a presence task
-    return 0;
+    if ((processes[current].state == OS_PS_READY) && current != 0) {
+		return current;
+	}
+	return os_Scheduler_Even(processes, current);
 }

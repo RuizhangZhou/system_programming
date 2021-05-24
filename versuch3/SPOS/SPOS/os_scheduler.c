@@ -261,6 +261,9 @@ ProcessID os_exec(ProgramID programID, Priority priority) {
 	newProcessPtr->progID = programID;
 	newProcessPtr->priority = priority;
 	newProcessPtr->sp.as_int = PROCESS_STACK_BOTTOM(freeIndex);
+
+	// Resets age of the process
+	os_resetProcessSchedulingInformation(pid);
 	
 	//the address of PC register(Programmzaehler)is 16 bits.
 	uint8_t low_byte= ((uint16_t)currentProgramPointer) & 0xff;
