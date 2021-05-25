@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "*.pl": "prolog",
+        "os_mem_drivers.h": "c",
+        "os_memory_strategies.h": "c"
+    }
+}
