@@ -10,6 +10,7 @@ typedef uint16_t MemAddr;
 //! define type MemValue to store the value in memory addresses
 typedef uint8_t MemValue;
 
+
 typedef struct {
     void (*init)(void);
     MemValue (*read)(MemAddr addr);
