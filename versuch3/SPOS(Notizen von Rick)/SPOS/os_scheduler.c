@@ -254,6 +254,10 @@ ProcessID os_exec(ProgramID programID, Priority priority) {
 		return INVALID_PROCESS;
 	}
 
+	//Versuch 3
+	//before creating the new Prozess,initiate the age of the freeIndex position
+	os_resetProcessSchedulingInformation(freeIndex);
+
 	//Prozess in den Prozess-Array eintragen
     ProcessID pid = freeIndex;
 	Process* newProcessPtr = &os_processes[pid];
@@ -388,6 +392,8 @@ uint8_t os_getNumberOfRegisteredPrograms(void) {
 void os_setSchedulingStrategy(SchedulingStrategy strategy) {
     //#warning IMPLEMENT STH. HERE
     currentStrategy = strategy;
+	//Versuch 3
+	os_resetSchedulingInformation(strategy);
 }
 
 /*!

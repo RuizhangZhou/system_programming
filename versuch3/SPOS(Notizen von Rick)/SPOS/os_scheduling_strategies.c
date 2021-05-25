@@ -3,6 +3,9 @@
 
 #include <stdlib.h>
 
+SchedulingInformation schedulingInfo;//global Variable
+
+
 /*!
  *  Reset the scheduling information for a specific strategy
  *  This is only relevant for RoundRobin and InactiveAging
@@ -12,6 +15,17 @@
  */
 void os_resetSchedulingInformation(SchedulingStrategy strategy) {
     // This is a presence task
+	switch (strategy)
+	{
+	case OS_SS_ROUND_ROBIN:
+		schedulingInfo.timeSlice=os_getProcessSlot(os_getCurrentProc())->priority;
+		break;
+	case OS_SS_INACTIVE_AGING:
+		for(uint8_t i=0; i<MAX_NUMBER_OF_PROCESSES;i++){
+			schedulingInfo.age[i]=0;
+		}
+		break;
+	}
 }
 
 /*!
@@ -23,6 +37,7 @@ void os_resetSchedulingInformation(SchedulingStrategy strategy) {
  */
 void os_resetProcessSchedulingInformation(ProcessID id) {
     // This is a presence task
+	schedulingInfo.age[id]=0;
 }
 
 /*!
@@ -99,7 +114,15 @@ ProcessID os_Scheduler_Random(Process const processes[], ProcessID current) {
  */
 ProcessID os_Scheduler_RoundRobin(Process const processes[], ProcessID current) {
     // This is a presence task
-    return 0;
+	schedulingInfo.timeSlice--;
+
+	if(schedulingInfo.timeSlice<=0 || !os_isRunnable(&processes[current])){
+		ProcessID pid=os_Scheduler_Even(processes,current);
+		//if no Process isRunnable, os_Schedular_Even will still return 0 back as the Leeflaufprozess
+		schedulingInfo.timeSlice=processes[pid].priority;
+		return pid;
+	}
+    return current;
 }
 
 /*!
@@ -115,7 +138,35 @@ ProcessID os_Scheduler_RoundRobin(Process const processes[], ProcessID current) 
  */
 ProcessID os_Scheduler_InactiveAging(Process const processes[], ProcessID current) {
     // This is a presence task
-    return 0;
+	for(uint8_t i=1;i<MAX_NUMBER_OF_PROCESSES;i++){
+		if(i!=current && os_isRunnable(&processes[current])){
+			schedulingInfo.age[i]+=processes[i].priority;
+		}
+	}
+
+	uint8_t pid=0;
+	//processes[0] is Leerlaufprozess, availabe prozess is processes[1] to processes[MAX_NUMBER_OF_PROCESSES-1]?
+	for(uint8_t i=1;i<MAX_NUMBER_OF_PROCESSES;i++){
+		if(!os_isRunnable(&processes[i])) continue;
+		if(pid==0){
+			pid=i;
+			continue;
+		}
+
+		if(schedulingInfo.age[i]>schedulingInfo.age[pid]){
+			pid=i;
+		}else if(schedulingInfo.age[i]==schedulingInfo.age[pid]){
+			if(processes[i].priority>processes[i].priority){
+				pid=i;
+			}else if(processes[i].priority==processes[i].priority){
+				if(i<pid){
+					pid=i;
+				}
+			}
+		}
+	}
+
+    return pid;//if pid=0 here means that no other process isRunnable
 }
 
 /*!
@@ -129,5 +180,28 @@ ProcessID os_Scheduler_InactiveAging(Process const processes[], ProcessID curren
  */
 ProcessID os_Scheduler_RunToCompletion(Process const processes[], ProcessID current) {
     // This is a presence task
-    return 0;
+	if(os_isRunnable(&processes[current]) && current!=0){
+		return current;
+	}else{
+		return os_Scheduler_Even(processes,current);
+	}
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
