@@ -3,6 +3,7 @@
 
 #include "os_mem_drivers.h"
 #include <stdint.h>
+#include <stddef.h>
 
 typedef enum {
     OS_MEM_FIRST,
@@ -16,9 +17,9 @@ typedef struct {
     MemDriver *driver;
 
     MemAddr mapStart;
-    uint16_t mapSize;
+    size_t mapSize;
     MemAddr useStart;
-    uint16_t useSize;
+    size_t useSize;
 
     AllocStrategy currentAllocStrategy;
 

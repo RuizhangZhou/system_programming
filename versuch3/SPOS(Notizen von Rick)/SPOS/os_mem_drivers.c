@@ -7,10 +7,12 @@ void init(void){
 }
 
 MemValue read(MemAddr addr){
-    return (uint8_t*) addr;
+	uint8_t *pointer=(uint8_t*) addr;
+    return *pointer;
 	
 }
 
 void write(MemAddr addr, MemValue value){
-    (uint8_t*) addr = value;
+    uint8_t *pointer = (uint8_t *)addr;
+	*pointer = value;
 }

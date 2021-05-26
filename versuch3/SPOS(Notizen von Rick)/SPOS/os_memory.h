@@ -3,7 +3,9 @@
 
 #include "os_mem_drivers.h"
 #include "os_memheap_drivers.h"
+#include "os_process.h"
 #include <stdint.h>
+#include <stddef.h>
 
 
 MemAddr os_malloc(Heap* heap, uint16_t size);

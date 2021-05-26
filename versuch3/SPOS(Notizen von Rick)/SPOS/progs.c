@@ -24,7 +24,7 @@ volatile uint8_t i = 0;
 ISR(TIMER2_COMPA_vect);
 
 // Array containing the correct output values for all four scheduling strategies.
-const ProcessID scheduling[SCHEDULING_STRATEGY_COUNT][32] PROGMEM  =  {
+const ProcessID scheduling[][32] PROGMEM  =  {
     [OS_SS_EVEN] = {1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2},
     [OS_SS_RANDOM] = {1, 3, 1, 1, 3, 3, 3, 3, 1, 1, 3, 2, 3, 3, 3, 1, 3, 2, 1, 2, 1, 1, 2, 2, 1, 3, 1, 1, 1, 1, 2, 1},
     [OS_SS_ROUND_ROBIN] = {1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 2, 2, 2, 2, 2, 3},
@@ -282,7 +282,7 @@ void performScheduleIdleTest(SchedulingStrategy strategy) {
     for(ProcessID i = 0; i < MAX_NUMBER_OF_PROCESSES; i++)
         processes[i].state = OS_PS_UNUSED;
 
-    ProcessID result=0;
+    ProcessID result = 0;
     for(ProcessID i = 0; i < MAX_NUMBER_OF_PROCESSES && result == 0; i++){
 
         switch(strategy) {

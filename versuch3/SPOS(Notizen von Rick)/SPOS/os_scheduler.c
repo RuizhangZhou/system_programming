@@ -5,6 +5,7 @@
 #include "os_taskman.h"
 #include "os_core.h"
 #include "lcd.h"
+#include "os_memheap_drivers.h"
 
 #include <avr/interrupt.h>
 
@@ -249,7 +250,9 @@ bool os_kill(ProcessID pid){
 	os_processes[pid].priority = 0;
 	os_processes[pid].sp.as_int = 0;//?
 	os_processes[pid].checksum = 0;
-	os_freeProcessMemory(intHeap, pid);
+	for (uint8_t i = 0; i < os_getHeapListLength() ; i++) {
+		os_freeProcessMemory(os_lookupHeap(i), pid);
+	}
 	os_leaveCriticalSection();
 	return true;
 }

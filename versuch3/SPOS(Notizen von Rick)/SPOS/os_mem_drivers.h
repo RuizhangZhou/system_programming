@@ -1,6 +1,8 @@
 #ifndef _OS_MEM_DRIVERS_H
 #define _OS_MEM_DRIVERS_H
 
+#include <stdint.h>
+
 //! external constant used for determining heap start
 extern uint8_t const __heap_start;
 

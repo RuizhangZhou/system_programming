@@ -3,6 +3,7 @@
 #include "os_process.h"
 #include "os_scheduler.h"
 #include "os_core.h"
+#include <stddef.h>
 
 MemAddr os_malloc(Heap* heap, uint16_t size){
     os_enterCriticalSection();
@@ -116,7 +117,8 @@ uint16_t os_getChunkSize(Heap const* heap, MemAddr addr){
 }
 
 ProcessID getOwnerOfChunk(Heap* heap, MemAddr addr){
-    return getMapEntry(heap,os_getFirstByteOfChunk(heap,addr));
+	uint8_t res=getMapEntry(heap,os_getFirstByteOfChunk(heap,addr));
+    return res;
 }
 
 void os_freeOwnerRestricted(Heap* heap, MemAddr addr, ProcessID owner){
@@ -152,7 +154,7 @@ void os_freeProcessMemory(Heap* heap, ProcessID pid){
 void os_free(Heap* heap, MemAddr addr){
     os_enterCriticalSection();
     
-    os_freeOwnerRestricted(heap,curAddr,os_getCurrentProc());
+    os_freeOwnerRestricted(heap,addr,os_getCurrentProc());
     
     os_leaveCriticalSection();
 }
