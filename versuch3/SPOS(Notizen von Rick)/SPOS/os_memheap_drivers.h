@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 typedef enum {
-    OS_MEMFIRST,
+    OS_MEM_FIRST,
     OS_MEM_NEXT,
     OS_MEM_BEST,
     OS_MEM_WORST

@@ -3,15 +3,14 @@
 #include <stdint.h>
 
 void init(void){
-
+    os_initHeaps();
 }
 
 MemValue read(MemAddr addr){
-    uint8_t *pointer = (uint8_t*) addr;
-	return *pointer;
+    return (uint8_t*) addr;
+	
 }
 
 void write(MemAddr addr, MemValue value){
-    uint8_t *pointer = (uint8_t*) addr;
-	*pointer = value;
+    (uint8_t*) addr = value;
 }
