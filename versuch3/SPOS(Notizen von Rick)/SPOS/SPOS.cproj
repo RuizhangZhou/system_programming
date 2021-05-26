@@ -175,9 +175,6 @@
     <Compile Include="os_input.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="os_memheap_drivers.c">
-      <SubType>compile</SubType>
-    </Compile>
     <Compile Include="os_memheap_drivers.h">
       <SubType>compile</SubType>
     </Compile>

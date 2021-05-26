@@ -158,11 +158,14 @@ ProcessID os_Scheduler_InactiveAging(Process const processes[], ProcessID curren
 		}else if(schedulingInfo.age[i]==schedulingInfo.age[pid]){
 			if(processes[i].priority>processes[i].priority){
 				pid=i;
-			}else if(processes[i].priority==processes[i].priority){
+			}
+			/*
+			else if(processes[i].priority==processes[i].priority){
 				if(i<pid){
 					pid=i;
 				}
 			}
+			*/
 		}
 	}
 
