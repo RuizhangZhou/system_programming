@@ -90,8 +90,6 @@ ISR(TIMER2_COMPA_vect) {
     //Prozesszustand des aktuellen Prozesses auf OS_PS_READY setzen//step 5
 	os_processes[os_getCurrentProc()].state = OS_PS_READY; 
 
-    
-
     //Scheduling-Strategie fuer naechsten Prozess auswaehlen//step 6
 	switch(os_getSchedulingStrategy()){
 		case OS_SS_EVEN:
@@ -227,6 +225,35 @@ ProgramID os_lookupProgramID(Program* program) {
  *  \return The index of the new process or INVALID_PROCESS as specified in
  *          defines.h on failure
  */
+
+
+void os_dispatcher(){
+	ProcessID i=currentProc;
+	Program *j=os_lookupProgramFunction(os_processes[i].progID);
+	(*j)();
+
+	os_kill(currentProc);
+
+	while(true){}
+}
+
+bool os_kill(ProcessID pid){
+	os_enterCriticalSection();
+	if(pid==0){
+		os_leaveCriticalSection();
+		return false;
+	}
+
+	os_processes[pid].state=OS_PS_UNUSED;
+	os_processes[pid].progID = 0;
+	os_processes[pid].priority = 0;
+	os_processes[pid].sp.as_int = 0;//?
+	os_processes[pid].checksum = 0;
+	os_freeProcessMemory(intHeap, pid);
+	os_leaveCriticalSection();
+	return true;
+}
+
 ProcessID os_exec(ProgramID programID, Priority priority) {
     //#warning IMPLEMENT STH. HERE
     //we dont want an interrupt here, so enter critical section
@@ -248,7 +275,11 @@ ProcessID os_exec(ProgramID programID, Priority priority) {
 	}
 		
 	//Funktionszeiger des Prozesses laden. Wenn keiner vorhanden, dann quit
-	Program* currentProgramPointer = os_lookupProgramFunction(programID);
+	//Program *currentProgramPointer = os_lookupProgramFunction(programID);
+	//Versuch 3
+	void (*currentProgramPointer)(void)  = &os_dispatcher;
+	//Program *currentProgramPointer=&os_dispatcher;
+
 	if(currentProgramPointer == NULL){
         os_leaveCriticalSection();
 		return INVALID_PROCESS;
@@ -477,3 +508,5 @@ StackChecksum os_getStackChecksum(ProcessID pid) {
 	}
 	return checksum;
 }
+
+
