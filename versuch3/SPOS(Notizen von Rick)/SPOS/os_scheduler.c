@@ -232,7 +232,7 @@ void os_dispatcher(){
 	Program *j=os_lookupProgramFunction(os_processes[i].progID);
 	(*j)();
 
-	os_kill(currentProc);
+	os_kill(i);
 
 	while(true){}
 }
