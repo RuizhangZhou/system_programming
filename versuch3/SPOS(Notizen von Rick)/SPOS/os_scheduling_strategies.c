@@ -170,6 +170,8 @@ ProcessID os_Scheduler_InactiveAging(Process const processes[], ProcessID curren
 			*/
 		}
 	}
+	
+	schedulingInfo.age[pid]=processes[pid].priority;
 
     return pid;//if pid=0 here means that no other process isRunnable
 }
