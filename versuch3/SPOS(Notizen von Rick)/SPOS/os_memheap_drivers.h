@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
+
 typedef enum {
     OS_MEM_FIRST,
     OS_MEM_NEXT,
@@ -25,6 +26,12 @@ typedef struct {
 
     const char *name;//the name of this heap
 } Heap;
+
+
+Heap intHeap__;
+
+#define intHeap (&intHeap__)
+
 
 void os_initHeaps(void);
 
