@@ -233,7 +233,7 @@ void os_dispatcher(){
 	ProcessID i=currentProc;
 	Program *j=os_lookupProgramFunction(os_processes[i].progID);
 	(*j)();
-
+	
 	os_kill(i);
 
 	while(true){}
@@ -244,6 +244,10 @@ bool os_kill(ProcessID pid){
 	if(pid==0){
 		os_leaveCriticalSection();
 		return false;
+	}
+	
+	while (pid == currentProc && criticalSectionCount > 1) {
+		os_leaveCriticalSection();
 	}
 
 	os_processes[pid].state=OS_PS_UNUSED;
@@ -257,6 +261,8 @@ bool os_kill(ProcessID pid){
 	os_leaveCriticalSection();
 	return true;
 }
+
+
 
 ProcessID os_exec(ProgramID programID, Priority priority) {
     //#warning IMPLEMENT STH. HERE
@@ -281,8 +287,8 @@ ProcessID os_exec(ProgramID programID, Priority priority) {
 	//Funktionszeiger des Prozesses laden. Wenn keiner vorhanden, dann quit
 	//Program *currentProgramPointer = os_lookupProgramFunction(programID);
 	//Versuch 3
-	void (*currentProgramPointer)(void)  = &os_dispatcher;
-	//Program *currentProgramPointer=&os_dispatcher;
+	//void (*currentProgramPointer)(void)  = &os_dispatcher;
+	Program *currentProgramPointer=&os_dispatcher;
 
 	if(currentProgramPointer == NULL){
         os_leaveCriticalSection();
