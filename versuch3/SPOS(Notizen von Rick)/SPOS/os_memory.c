@@ -8,24 +8,35 @@
 
 MemAddr os_malloc(Heap* heap, uint16_t size){
     os_enterCriticalSection();
-
+	MemAddr res=0;
     switch (os_getAllocationStrategy(heap)) {
 		case OS_MEM_FIRST :
-			os_leaveCriticalSection();
-			return os_Memory_FirstFit(heap, size);		
+			res=os_Memory_FirstFit(heap, size);
+			
+			break;	
 		case OS_MEM_BEST :
-			os_leaveCriticalSection();
-			return os_Memory_BestFit(heap, size);
+			
+			res=os_Memory_BestFit(heap, size);
+			break;
 		case OS_MEM_NEXT :
-			os_leaveCriticalSection();
-			return os_Memory_NextFit(heap, size);
+			
+			res=os_Memory_NextFit(heap, size);
+			break;
 		case OS_MEM_WORST :
-			os_leaveCriticalSection();
-			return os_Memory_WorstFit(heap, size);
+			
+			res=os_Memory_WorstFit(heap, size);
+			break;
 	}
-    
+	
+	if(res!=0){
+		setMapEntry(heap,res,os_getCurrentProc());
+		for(MemAddr offset=1;offset<size;offset++){
+			setMapEntry(heap,res+offset,0xF);
+		}
+	}
+	
     os_leaveCriticalSection();//in Doxyen doesn't have os_leaveCriticalSection()?
-	return 0;
+	return res;
 
 }
 
@@ -108,13 +119,17 @@ uint16_t os_getChunkSize(Heap const* heap, MemAddr addr){
     if(getMapEntry(heap,addr)==0){
         return 0;
     }
-    if(getMapEntry(heap,addr)!=0xF){//the mapEntry of this addr ist a ProcessID
+	
+    if(getMapEntry(heap,addr)!=0xF){//the mapEntry of this addr is a ProcessID
         addr++;
     }
-    while(getMapEntry(heap,addr)==0xF){//addr maybe in the middle, go to the end of chunk
+	MemAddr useEnd=os_getUseStart(heap)+os_getUseSize(heap)-1;
+    while(getMapEntry(heap,addr)==0xF 
+			&& addr <= useEnd){
+		//addr maybe in the middle, go to the end of chunk, and cannot read after the useStart
         addr++;
     }
-    return addr - os_getFirstByteOfChunk(heap,addr);
+    return addr - os_getFirstByteOfChunk(heap,addr-1);//now addr is at the first Byte of next Chunk
 }
 
 ProcessID getOwnerOfChunk(Heap* heap, MemAddr addr){
@@ -131,7 +146,8 @@ void os_freeOwnerRestricted(Heap* heap, MemAddr addr, ProcessID owner){
         return;
     }
     MemAddr firstByteOfChunk=os_getFirstByteOfChunk(heap,addr);
-    for(MemAddr offset=0;offset<os_getChunkSize(heap,addr);offset++){
+	uint16_t chunkSize=os_getChunkSize(heap,addr);
+    for(uint16_t offset=0;offset<chunkSize;offset++){
         setMapEntry(heap,firstByteOfChunk+offset,0);
     }
 

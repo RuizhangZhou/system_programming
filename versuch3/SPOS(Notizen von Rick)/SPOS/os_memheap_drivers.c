@@ -12,7 +12,7 @@ Heap intHeap__={
 	.mapStart=HEAP_BOTTOM,
 	.mapSize=HEAP_SIZE/3,
 	.useStart=HEAP_BOTTOM+HEAP_SIZE/3,
-	.useSize=HEAP_SIZE/3*2,
+	.useSize=(HEAP_SIZE/3)*2,
 	.currentAllocStrategy=OS_MEM_FIRST,
 };
 

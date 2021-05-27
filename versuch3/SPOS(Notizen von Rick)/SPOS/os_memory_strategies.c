@@ -3,24 +3,23 @@
 
 
 MemAddr os_Memory_FirstFit (Heap *heap, size_t size){
-    size_t freeSize=0;
-    MemAddr curAddr=heap->useStart;
+    
+    MemAddr chunkStart=heap->useStart;
 
-    while(curAddr<=heap->useStart+heap->useSize-size){
-        if(getMapEntry(heap,curAddr)==0){
-            freeSize++;
-        }else{
-            freeSize=0;
-        }
+    while(chunkStart<= heap->useStart + heap->useSize - size){
         
-        curAddr++;
-
-        if(freeSize>=size){
-            return curAddr-size;
-        }
+		for(size_t offset=0;offset<size;offset++){
+			if(getMapEntry(heap,chunkStart+offset)!=0){
+				chunkStart+=offset+1;
+				break;
+			}
+			if(offset>=size-1){
+				return chunkStart;
+			}
+		}
         
     }
-
+	
     return 0;
 
 
