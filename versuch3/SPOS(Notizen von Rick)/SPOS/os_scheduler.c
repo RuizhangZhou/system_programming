@@ -6,6 +6,7 @@
 #include "os_core.h"
 #include "lcd.h"
 #include "os_memheap_drivers.h"
+#include "os_memory.h"
 
 #include <avr/interrupt.h>
 

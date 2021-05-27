@@ -4,6 +4,7 @@
 #include "os_scheduler.h"
 #include "os_core.h"
 #include <stddef.h>
+#include "os_memory_strategies.h"
 
 MemAddr os_malloc(Heap* heap, uint16_t size){
     os_enterCriticalSection();

@@ -1,4 +1,5 @@
 #include "os_mem_drivers.h"
+#include "os_memheap_drivers.h"
 
 #include <stdint.h>
 

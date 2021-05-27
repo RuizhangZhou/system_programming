@@ -17,14 +17,16 @@ void os_resetSchedulingInformation(SchedulingStrategy strategy) {
     // This is a presence task
 	switch (strategy)
 	{
-	case OS_SS_ROUND_ROBIN:
-		schedulingInfo.timeSlice=os_getProcessSlot(os_getCurrentProc())->priority;
-		break;
-	case OS_SS_INACTIVE_AGING:
-		for(uint8_t i=0; i<MAX_NUMBER_OF_PROCESSES;i++){
-			schedulingInfo.age[i]=0;
-		}
-		break;
+		case OS_SS_ROUND_ROBIN:
+			schedulingInfo.timeSlice=os_getProcessSlot(os_getCurrentProc())->priority;
+			break;
+		case OS_SS_INACTIVE_AGING:
+			for(uint8_t i=0; i<MAX_NUMBER_OF_PROCESSES;i++){
+				schedulingInfo.age[i]=0;
+			}
+			break;
+		default :
+			break;
 	}
 }
 
