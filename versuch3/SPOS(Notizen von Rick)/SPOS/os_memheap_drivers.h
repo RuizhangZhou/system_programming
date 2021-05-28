@@ -11,6 +11,8 @@
 #define HEAP_TOP	STACK_TOP
 #define HEAP_SIZE   (HEAP_TOP-HEAP_BOTTOM)
 
+
+
 typedef enum {
     OS_MEM_FIRST,
     OS_MEM_NEXT,

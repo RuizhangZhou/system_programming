@@ -3,8 +3,7 @@
 
 #include <stdint.h>
 
-//! external constant used for determining heap start
-extern uint8_t const __heap_start;
+
 
 //! define type MemAddr to store 16 bits memory addresses
 typedef uint16_t MemAddr;
