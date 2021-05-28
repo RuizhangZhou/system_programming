@@ -88,4 +88,24 @@ void os_enterCriticalSection(void);
 //! Leaves a critical code section
 void os_leaveCriticalSection(void);
 
+
+//----------------------------------------------------------------------------
+// Dispatcher
+//----------------------------------------------------------------------------
+
+/*!
+ * \brief Kills a process by cleaning up the corresponding slot in os_processes.
+ *
+ * \param pid The ProcessID of the process to be killed
+ * \return True, if killing process was successful
+ */
+bool os_kill(ProcessID pid);
+
+/*!
+ * \brief Encapsulates any running process in order make it possible for processes to terminate
+ *
+ * This wrapper enables the possibility to perfom a few necessary steps after the actual process function has finished.
+ */
+void os_dispatcher(void);
+
 #endif

@@ -34,6 +34,7 @@ typedef struct Heap {
     uint16_t useSectionSize;
     AllocStrategy actAllocStrategy;
     const char *name;
+    uint16_t procVisitArea[7];
 } Heap;
 
 //! instance of Heap named int(ernal) Heap

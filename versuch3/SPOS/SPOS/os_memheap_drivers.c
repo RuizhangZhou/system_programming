@@ -9,6 +9,7 @@
 #include "os_memheap_drivers.h"
 #include "os_core.h"
 #include "defines.h"
+#include "lcd.h"
 #include <avr/pgmspace.h>
 
 //! defines for e.g. start address and size of map/use-section of the heap
@@ -32,12 +33,15 @@ Heap intHeap__ = {
     .useSectionSize = USE_SECTIOM_SIZE,
     .actAllocStrategy = OS_MEM_FIRST,
     .name = intStr,
+    .procVisitArea = { 0 },
 };
 
 //! function that sets HEAPBOTTOM to address of __heap_start if not less than that address
 void checkIntHeapStart() {
     if ((uint16_t) &__heap_start >= HEAPBOTTOM) {
-        os_errorPStr("Resetting Heap  Start...");
+        // TODO: Other method that does not terminate program but prints something
+        lcd_clear();
+        lcd_writeProgString(PSTR("Resetting Heap  Start..."));
 		HEAPBOTTOM = (uint16_t) &__heap_start;
     }
 }

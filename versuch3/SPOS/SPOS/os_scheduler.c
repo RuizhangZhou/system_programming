@@ -263,13 +263,21 @@ ProcessID os_exec(ProgramID programID, Priority priority) {
 	newProcessPtr->sp.as_int = PROCESS_STACK_BOTTOM(freeIndex);
 
 	// Resets age of the process
-	os_resetProcessSchedulingInformation(pid);
+	//os_resetProcessSchedulingInformation(pid);
 	
 	//the address of PC register(Programmzaehler)is 16 bits.
-	uint8_t low_byte= ((uint16_t)currentProgramPointer) & 0xff;
+	//uint8_t low_byte= ((uint16_t)currentProgramPointer) & 0xff;
     //uint8_t automatically abandon the higher 8 bits //can I just: uint8_t low_byte = (uint16_t)currentProgramPointer?
-	uint8_t high_byte= ((uint16_t)currentProgramPointer) >> 8;
+	//uint8_t high_byte= ((uint16_t)currentProgramPointer) >> 8;
     // move the higher 8 bits to the lower position, and the uint8_t then takes the lower 8 bits
+
+	// new functionpointer (Typ: void) -> uint16_t
+	uint16_t funcPointer = (uint16_t) &os_dispatcher;
+
+	// Get high and low byte
+	uint8_t functionPointerBytes[2];
+	functionPointerBytes[0] = funcPointer >> 8;
+	functionPointerBytes[1] = funcPointer & 0x00FF
 	
 	*(newProcessPtr->sp.as_ptr)=low_byte;
 	newProcessPtr->sp.as_ptr--;
@@ -474,3 +482,83 @@ StackChecksum os_getStackChecksum(ProcessID pid) {
 	}
 	return checksum;
 }
+
+
+//----------------------------------------------------------------------------
+// Dispatcher
+//----------------------------------------------------------------------------
+
+/*!
+ * \brief Encapsulates any running process in order make it possible for processes to terminate
+ *
+ * This wrapper enables the possibility to perfom a few necessary steps after the actual process function has finished.
+ */
+void os_dispatcher(void) {
+
+	if (os_processes[currentProc].state != OS_PS_RUNNING) {
+		os_error("proc not in     state running");
+	}
+
+	// call the function
+	ProgramID pid = os_processes[currentProc].progID;
+	os_programs[pid]();
+
+	// kill process if it is ready
+	os_kill(currentProc);
+
+	// infinite loop if waiting for the scheduler
+	while (1) { }
+
+}
+
+/*!
+ * \brief Kills a process by cleaning up the corresponding slot in os_processes.
+ *
+ * \param pid The ProcessID of the process to be killed
+ * \return True, if killing process was successful
+ */
+bool os_kill(ProcessID pid) {
+	os_enterCriticalSection();
+
+	if (pid == 0) {
+		os_leaveCriticalSection();
+		return false;
+	}
+
+	/*
+	 * Just one Process can be in the critical section.
+	 *
+	 * If the one that is currently running should be killed, it has to first leave this section
+	 * If another process should be killed that is not the currently running one, there should not be
+	 * any problem. 
+	 */
+	while (pid == currentProc && criticalSectionCount > 1) {
+		os_leaveCriticalSection();
+	}
+
+	// call os_processes
+	os_processes[pid].state = OS_PS_UNUSED;
+	os_processes[pid].progID = 0;
+	os_processes[pid].priority = 0;
+	os_processes[pid].sp.as_int = 0;
+
+	// timeslice to 0
+	os_resetProcessSchedulingInformation(pid);
+	// os_removeFromMlfq(pid);
+
+	for (uint8_t i = 0; i < os_getHeapListLength() ; i++) {
+		os_freeProcessMemory(os_lookupHeap(i), pid);
+	}
+
+	if (pid != currentProc) {
+		os_leaveCriticalSection();
+		return true;
+	}
+	// If process does not kill it self another process needs to be run
+	os_leaveCriticalSection();
+	// call scheduler explicitly
+	TIMER2_COMPA_vect();
+	return true;
+}
+
+
