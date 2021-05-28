@@ -260,7 +260,9 @@ bool os_kill(ProcessID pid){
 		os_freeProcessMemory(os_lookupHeap(i), pid);
 	}
 	*/
-	os_freeProcessMemory(intHeap,pid);
+	//we have tested the os_freeProcessMemory is still not so efficient,
+	//but here in Versuch 3 we don't have to call this here
+	//os_freeProcessMemory(intHeap,pid);
 	
 	if(pid==currentProc){
 		criticalSectionCount=1;

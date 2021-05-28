@@ -6,6 +6,11 @@
 #include <stddef.h>
 
 
+#define HEAP_BOTTOM	(0X100+200)
+#define STACK_TOP	PROCESS_STACK_BOTTOM(MAX_NUMBER_OF_PROCESSES)
+#define HEAP_TOP	STACK_TOP
+#define HEAP_SIZE   (HEAP_TOP-HEAP_BOTTOM)
+
 typedef enum {
     OS_MEM_FIRST,
     OS_MEM_NEXT,
