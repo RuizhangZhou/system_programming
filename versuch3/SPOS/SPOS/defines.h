@@ -90,4 +90,10 @@
 //! The bottom of the memory chunk with number PID.
 #define PROCESS_STACK_BOTTOM(PID)   (BOTTOM_OF_PROCS_STACK - ((PID) * STACK_SIZE_PROC))
 
+//! Defines offset which is the bottom of the heap because of registers and global variables
+#define HEAPBOTTOM                  0x240
+
+//! We take a assume a imaginary 9th process on top of the real 8th process and get the process stack bottom of it to get the top of the heap
+#define HEAPTOP                     PROCESS_STACK_BOTTOM(MAX_NUMBER_OF_PROCESSES)
+
 #endif
