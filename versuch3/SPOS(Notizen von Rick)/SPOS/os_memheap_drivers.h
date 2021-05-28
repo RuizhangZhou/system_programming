@@ -3,9 +3,11 @@
 
 #include "os_mem_drivers.h"
 #include <stdint.h>
+#include <stddef.h>
+
 
 typedef enum {
-    OS_MEMFIRST,
+    OS_MEM_FIRST,
     OS_MEM_NEXT,
     OS_MEM_BEST,
     OS_MEM_WORST
@@ -16,14 +18,20 @@ typedef struct {
     MemDriver *driver;
 
     MemAddr mapStart;
-    uint16_t mapSize;
+    size_t mapSize;
     MemAddr useStart;
-    uint16_t useSize;
+    size_t useSize;
 
     AllocStrategy currentAllocStrategy;
 
     const char *name;//the name of this heap
 } Heap;
+
+
+Heap intHeap__;
+
+#define intHeap (&intHeap__)
+
 
 void os_initHeaps(void);
 

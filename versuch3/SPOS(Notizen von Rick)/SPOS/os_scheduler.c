@@ -5,6 +5,8 @@
 #include "os_taskman.h"
 #include "os_core.h"
 #include "lcd.h"
+#include "os_memheap_drivers.h"
+#include "os_memory.h"
 
 #include <avr/interrupt.h>
 
@@ -86,10 +88,11 @@ ISR(TIMER2_COMPA_vect) {
 		os_waitForNoInput();
 		os_taskManMain();
 	}
-
-    //Prozesszustand des aktuellen Prozesses auf OS_PS_READY setzen//step 5
-	os_processes[os_getCurrentProc()].state = OS_PS_READY; 
-
+	if(os_processes[os_getCurrentProc()].state!=OS_PS_UNUSED){
+		//Prozesszustand des aktuellen Prozesses auf OS_PS_READY setzen//step 5
+		os_processes[os_getCurrentProc()].state = OS_PS_READY; 
+	}
+	
     
 
     //Scheduling-Strategie fuer naechsten Prozess auswaehlen//step 6
@@ -114,7 +117,7 @@ ISR(TIMER2_COMPA_vect) {
     //Fortzusetzender Prozesszustand auf OS_PS_RUNNING setzen//step 7
 	os_processes[os_getCurrentProc()].state = OS_PS_RUNNING;
 
-    // Pr�fen, ob die Stack Checksumme immer noch passt
+    // Pruefen, ob die Stack Checksumme immer noch passt
     if (os_processes[currentProc].checksum != os_getStackChecksum(currentProc)) {
 	    os_error("Stack Inconsistency!");
     }
@@ -227,6 +230,51 @@ ProgramID os_lookupProgramID(Program* program) {
  *  \return The index of the new process or INVALID_PROCESS as specified in
  *          defines.h on failure
  */
+
+
+void os_dispatcher(){
+	ProcessID i=currentProc;
+	Program *j=os_lookupProgramFunction(os_processes[i].progID);
+	(*j)();
+	
+	os_kill(i);
+	
+}
+
+bool os_kill(ProcessID pid){
+	os_enterCriticalSection();
+	if(pid==0){
+		os_leaveCriticalSection();
+		return false;
+	}
+	
+	os_processes[pid].state=OS_PS_UNUSED;
+	/*
+	os_processes[pid].progID = 0;
+	os_processes[pid].priority = 0;
+	os_processes[pid].sp.as_int = 0;//?
+	os_processes[pid].checksum = 0;
+	*/
+	/*
+	for (uint8_t i = 0; i < os_getHeapListLength() ; i++) {
+		os_freeProcessMemory(os_lookupHeap(i), pid);
+	}
+	*/
+	os_freeProcessMemory(intHeap,pid);
+	
+	if(pid==currentProc){
+		criticalSectionCount=1;
+		os_leaveCriticalSection();
+		while(true){}
+	}
+	//only if pid==currentProc we endlessloop
+		
+	
+	os_leaveCriticalSection();
+	return true;
+}
+
+
 ProcessID os_exec(ProgramID programID, Priority priority) {
     //#warning IMPLEMENT STH. HERE
     //we dont want an interrupt here, so enter critical section
@@ -248,7 +296,12 @@ ProcessID os_exec(ProgramID programID, Priority priority) {
 	}
 		
 	//Funktionszeiger des Prozesses laden. Wenn keiner vorhanden, dann quit
-	Program* currentProgramPointer = os_lookupProgramFunction(programID);
+	//Program *currentProgramPointer = os_lookupProgramFunction(programID);
+	//Versuch 3
+	//void (*currentProgramPointer)(void)  = &os_dispatcher;
+	Program *currentProgramPointer=&os_dispatcher;
+	
+
 	if(currentProgramPointer == NULL){
         os_leaveCriticalSection();
 		return INVALID_PROCESS;
@@ -477,3 +530,5 @@ StackChecksum os_getStackChecksum(ProcessID pid) {
 	}
 	return checksum;
 }
+
+

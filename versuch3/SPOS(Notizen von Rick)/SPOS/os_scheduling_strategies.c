@@ -17,14 +17,16 @@ void os_resetSchedulingInformation(SchedulingStrategy strategy) {
     // This is a presence task
 	switch (strategy)
 	{
-	case OS_SS_ROUND_ROBIN:
-		schedulingInfo.timeSlice=os_getProcessSlot(os_getCurrentProc())->priority;
-		break;
-	case OS_SS_INACTIVE_AGING:
-		for(uint8_t i=0; i<MAX_NUMBER_OF_PROCESSES;i++){
-			schedulingInfo.age[i]=0;
-		}
-		break;
+		case OS_SS_ROUND_ROBIN:
+			schedulingInfo.timeSlice=os_getProcessSlot(os_getCurrentProc())->priority;
+			break;
+		case OS_SS_INACTIVE_AGING:
+			for(uint8_t i=0; i<MAX_NUMBER_OF_PROCESSES;i++){
+				schedulingInfo.age[i]=0;
+			}
+			break;
+		default :
+			break;
 	}
 }
 
@@ -158,13 +160,18 @@ ProcessID os_Scheduler_InactiveAging(Process const processes[], ProcessID curren
 		}else if(schedulingInfo.age[i]==schedulingInfo.age[pid]){
 			if(processes[i].priority>processes[i].priority){
 				pid=i;
-			}else if(processes[i].priority==processes[i].priority){
+			}
+			/*
+			else if(processes[i].priority==processes[i].priority){
 				if(i<pid){
 					pid=i;
 				}
 			}
+			*/
 		}
 	}
+	
+	schedulingInfo.age[pid]=processes[pid].priority;
 
     return pid;//if pid=0 here means that no other process isRunnable
 }

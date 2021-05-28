@@ -88,4 +88,9 @@ void os_enterCriticalSection(void);
 //! Leaves a critical code section
 void os_leaveCriticalSection(void);
 
+void os_dispatcher(void);
+
+bool os_kill(ProcessID pid);
+
+
 #endif

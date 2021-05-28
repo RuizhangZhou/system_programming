@@ -43,7 +43,7 @@ typedef struct Heap {
 Heap intHeap__;
 
 //! Realises a pointer to the Heap intHeap__.
-#define 	intHeap   (&intHeap__)
+#define intHeap  (&intHeap__)
 
 //! Initialises all Heaps.
 void os_initHeaps();
