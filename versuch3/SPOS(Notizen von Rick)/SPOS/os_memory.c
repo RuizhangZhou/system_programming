@@ -124,8 +124,7 @@ uint16_t os_getChunkSize(Heap const* heap, MemAddr addr){
         addr++;
     }
 	MemAddr useEnd=os_getUseStart(heap)+os_getUseSize(heap)-1;
-    while(getMapEntry(heap,addr)==0xF 
-			&& addr <= useEnd){
+    while(getMapEntry(heap,addr)==0xF && addr <= useEnd){
 		//addr maybe in the middle, go to the end of chunk, and cannot read after the useStart
         addr++;
     }
@@ -157,11 +156,11 @@ void os_freeOwnerRestricted(Heap* heap, MemAddr addr, ProcessID owner){
 void os_freeProcessMemory(Heap* heap, ProcessID pid){
     os_enterCriticalSection();
     MemAddr curAddr=heap->useStart;
-    while(curAddr<=heap->useStart+heap->useSize){
-        if(getMapEntry(heap,curAddr)==pid){//the first Byte of Chunk with ProcessID=pid
+    while(curAddr<heap->useStart+heap->useSize){
+        if(getMapEntry(heap,curAddr);==pid){//the first Byte of Chunk with ProcessID=pid
             os_freeOwnerRestricted(heap,curAddr,pid);
             curAddr+=os_getChunkSize(heap,curAddr);
-        }else{//any else(mapEntry=0 || F || ProcessID!=pid)
+        }else{//(ProcessID!=pid) or mapEntry=0/0xF
             curAddr++;
         }
     }

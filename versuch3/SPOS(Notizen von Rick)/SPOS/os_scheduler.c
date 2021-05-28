@@ -88,9 +88,12 @@ ISR(TIMER2_COMPA_vect) {
 		os_waitForNoInput();
 		os_taskManMain();
 	}
-
-    //Prozesszustand des aktuellen Prozesses auf OS_PS_READY setzen//step 5
-	os_processes[os_getCurrentProc()].state = OS_PS_READY; 
+	if(os_processes[os_getCurrentProc()].state!=OS_PS_UNUSED){
+		//Prozesszustand des aktuellen Prozesses auf OS_PS_READY setzen//step 5
+		os_processes[os_getCurrentProc()].state = OS_PS_READY; 
+	}
+	
+    
 
     //Scheduling-Strategie fuer naechsten Prozess auswaehlen//step 6
 	switch(os_getSchedulingStrategy()){
@@ -114,7 +117,7 @@ ISR(TIMER2_COMPA_vect) {
     //Fortzusetzender Prozesszustand auf OS_PS_RUNNING setzen//step 7
 	os_processes[os_getCurrentProc()].state = OS_PS_RUNNING;
 
-    // Pr�fen, ob die Stack Checksumme immer noch passt
+    // Pruefen, ob die Stack Checksumme immer noch passt
     if (os_processes[currentProc].checksum != os_getStackChecksum(currentProc)) {
 	    os_error("Stack Inconsistency!");
     }
@@ -235,8 +238,7 @@ void os_dispatcher(){
 	(*j)();
 	
 	os_kill(i);
-
-	while(true){}
+	
 }
 
 bool os_kill(ProcessID pid){
@@ -246,22 +248,31 @@ bool os_kill(ProcessID pid){
 		return false;
 	}
 	
-	while (pid == currentProc && criticalSectionCount > 1) {
-		os_leaveCriticalSection();
-	}
-
 	os_processes[pid].state=OS_PS_UNUSED;
+	/*
 	os_processes[pid].progID = 0;
 	os_processes[pid].priority = 0;
 	os_processes[pid].sp.as_int = 0;//?
 	os_processes[pid].checksum = 0;
+	*/
+	/*
 	for (uint8_t i = 0; i < os_getHeapListLength() ; i++) {
 		os_freeProcessMemory(os_lookupHeap(i), pid);
 	}
+	*/
+	os_freeProcessMemory(intHeap,pid);
+	
+	if(pid==currentProc){
+		criticalSectionCount=1;
+		os_leaveCriticalSection();
+		while(true){}
+	}
+	//only if pid==currentProc we endlessloop
+		
+	
 	os_leaveCriticalSection();
 	return true;
 }
-
 
 
 ProcessID os_exec(ProgramID programID, Priority priority) {
@@ -289,6 +300,7 @@ ProcessID os_exec(ProgramID programID, Priority priority) {
 	//Versuch 3
 	//void (*currentProgramPointer)(void)  = &os_dispatcher;
 	Program *currentProgramPointer=&os_dispatcher;
+	
 
 	if(currentProgramPointer == NULL){
         os_leaveCriticalSection();
