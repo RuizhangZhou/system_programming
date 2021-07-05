@@ -165,7 +165,7 @@ void os_freeProcessMemory(Heap* heap, ProcessID pid){
             curAddr++;
         }
     }
-    os_enterCriticalSection();
+    os_leaveCriticalSection();
 }
 
 void os_free(Heap* heap, MemAddr addr){

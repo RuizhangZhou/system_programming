@@ -2,6 +2,7 @@
 #define _OS_MEM_DRIVERS_H
 
 #include <stdint.h>
+#include <inttypes.h>
 
 
 
@@ -30,7 +31,11 @@ MemValue read(MemAddr addr);
 //! Instanz des Speichertreibers 
 MemDriver intSRAM__;
 
+MemDriver extSRAM__;
+
 #define intSRAM (&intSRAM__)
+
+#define extSRAM (&extSRAM__)
 
 
 

@@ -4,7 +4,7 @@
 
 void os_spi_init (){
     //Pins initialisieren
-    //DDR 0 means input, 1 means output
+    //DDR: 0 means input, 1 means output
     //bit 0-3 keep unchanged, set bit CS(4),SI(5),SCK(7) as 1, bit SO(6) as 0
 	//here this Microchip works as a Master?
     //as a Master the CS doesn't matter anything?
@@ -19,7 +19,8 @@ void os_spi_init (){
 uint8_t os_spi_send (uint8_t data){
     os_enterCriticalSection();
     SPDR=data;
-    while(!(SPSR>>SPIF)){/* activ gewartet if SPIF=0 */}
+    while(!(SPSR>>SPIF)){/* activ gewartet if bit(SPIF)=0 */}
+    //while(!(SPSR & (1<<SPIF))){ /* Wait for serial finish */ }//alternative implement
     os_leaveCriticalSection();
     return SPDR;
 }
