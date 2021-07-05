@@ -11,7 +11,7 @@
 #define INT_HEAP_SIZE   (INT_HEAP_TOP-INT_HEAP_BOTTOM)
 
 #define EXT_SRAM_START (0x0)
-#define EXT_MEMORY_SRAM 65536//how is this number come from? 64KiB?
+#define EXT_MEMORY_SRAM 65536//64KiB?
 #define DEFAULT_ALLOCATION_STRATEGY OS_MEM_FIRST
 
 extern uint8_t const __heap_start;
@@ -63,14 +63,14 @@ void os_initHeaps(){
 }
 
 uint8_t os_getHeapListLength(){
-    //return sizeof(*intHeap)/sizeof(Heap);
-	return 2;
+    //return sizeof(*intHeap)/sizeof(Heap);//=1 (Versuch 3)
+	return 2;//just one slave as extHeap?（Versuch 4）
 }
 
 Heap* os_lookupHeap(uint8_t index){
-	if(index==0){
-		return intHeap;
-	}else{
+	if(index==1){
 		return extHeap;
+	}else{
+		return intHeap;
 	}
 }

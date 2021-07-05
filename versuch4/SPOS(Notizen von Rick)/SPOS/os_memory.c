@@ -6,53 +6,6 @@
 #include <stddef.h>
 #include "os_memory_strategies.h"
 
-MemAddr os_malloc(Heap* heap, uint16_t size){
-    os_enterCriticalSection();
-	MemAddr res=0;
-    switch (os_getAllocationStrategy(heap)) {
-		case OS_MEM_FIRST :
-			res=os_Memory_FirstFit(heap, size);
-			
-			break;	
-		case OS_MEM_BEST :
-			
-			res=os_Memory_BestFit(heap, size);
-			break;
-		case OS_MEM_NEXT :
-			
-			res=os_Memory_NextFit(heap, size);
-			break;
-		case OS_MEM_WORST :
-			
-			res=os_Memory_WorstFit(heap, size);
-			break;
-	}
-	
-	if(res!=0){
-		setMapEntry(heap,res,os_getCurrentProc());
-		for(MemAddr offset=1;offset<size;offset++){
-			setMapEntry(heap,res+offset,0xF);
-		}
-	}
-	
-    os_leaveCriticalSection();//in Doxyen doesn't have os_leaveCriticalSection()?
-	return res;
-
-}
-
-size_t os_getMapSize(Heap const* heap){
-    return heap->mapSize;
-}
-size_t os_getUseSize(Heap const* heap){
-    return heap->useSize;
-}
-MemAddr os_getMapStart(Heap const* heap){
-    return heap->mapStart;
-}
-MemAddr os_getUseStart(Heap const* heap){
-    return heap->useStart;
-}
-
 
 void setLowNibble(Heap const *heap, MemAddr addr, MemValue value){
     uint8_t highNibble=heap->driver->read(addr) & 0b11110000;//highNibble=h1h2h3h4 0000
@@ -87,6 +40,60 @@ MemValue getHighNibble (Heap const *heap, MemAddr addr){
 	return (heap->driver->read(addr) >> 4) ;
 }
 
+
+MemAddr os_malloc(Heap* heap, uint16_t size){
+    os_enterCriticalSection();
+	MemAddr res=0;
+    switch (os_getAllocationStrategy(heap)) {
+		case OS_MEM_FIRST :
+			res=os_Memory_FirstFit(heap, size);
+			
+			break;	
+		case OS_MEM_BEST :
+			
+			res=os_Memory_BestFit(heap, size);
+			break;
+		case OS_MEM_NEXT :
+			
+			res=os_Memory_NextFit(heap, size);
+			break;
+		case OS_MEM_WORST :
+			
+			res=os_Memory_WorstFit(heap, size);
+			break;
+	}
+	if(res!=0){
+		setMapEntry(heap,res,os_getCurrentProc());
+		for(MemAddr offset=1;offset<size;offset++){
+			setMapEntry(heap,res+offset,0xF);
+		}
+	}
+	
+    os_leaveCriticalSection();//in Doxyen doesn't have os_leaveCriticalSection()?
+	return res;
+
+}
+
+size_t os_getMapSize(Heap const* heap){
+    return heap->mapSize;
+}
+size_t os_getUseSize(Heap const* heap){
+    return heap->useSize;
+}
+MemAddr os_getMapStart(Heap const* heap){
+    return heap->mapStart;
+}
+MemAddr os_getUseStart(Heap const* heap){
+    return heap->useStart;
+}
+
+//This will move one Chunk to a new location , To provide this the content of the old one is copied to the new location, 
+//as well as all Map Entries are set properly since this is a helper function for reallocation, it only works if the new Chunk is bigger than the old one.
+void moveChunk(Heap *heap,MemAddr oldChunk,size_t oldSize,MemAddr newChunk,size_t newSize){
+
+}	
+
+
 MemValue getMapEntry(Heap const* heap, MemAddr addr){
     MemAddr mapAddr=heap->mapStart+(addr-heap->useStart)/2;
     if((addr-heap->useStart)%2==0){
@@ -119,7 +126,6 @@ uint16_t os_getChunkSize(Heap const* heap, MemAddr addr){
     if(getMapEntry(heap,addr)==0){
         return 0;
     }
-	
     if(getMapEntry(heap,addr)!=0xF){//the mapEntry of this addr is a ProcessID
         addr++;
     }
@@ -139,7 +145,6 @@ ProcessID getOwnerOfChunk(Heap* heap, MemAddr addr){
 
 void os_freeOwnerRestricted(Heap* heap, MemAddr addr, ProcessID owner){
     os_enterCriticalSection();
-
     if(owner!=getOwnerOfChunk(heap,addr)){
         os_error("wrong process:no right to free");
         os_leaveCriticalSection();
@@ -150,7 +155,6 @@ void os_freeOwnerRestricted(Heap* heap, MemAddr addr, ProcessID owner){
     for(uint16_t offset=0;offset<chunkSize;offset++){
         setMapEntry(heap,firstByteOfChunk+offset,0);
     }
-
     os_leaveCriticalSection();
 }
 
@@ -170,18 +174,16 @@ void os_freeProcessMemory(Heap* heap, ProcessID pid){
 
 void os_free(Heap* heap, MemAddr addr){
     os_enterCriticalSection();
-    
     os_freeOwnerRestricted(heap,addr,os_getCurrentProc());
-    
     os_leaveCriticalSection();
 }
 
 
 AllocStrategy os_getAllocationStrategy(Heap const* heap){
-    return heap->currentAllocStrategy;
+    return heap->strategy;
 }
 
 void os_setAllocationStrategy(Heap *heap, AllocStrategy allocStrat){
-	heap->currentAllocStrategy = allocStrat;
+	heap->strategy = allocStrat;
 }
 
