@@ -95,25 +95,27 @@ void os_spi_init(){
 
 	/* Den ~Chipselect auf HIGH setzen
 	 * Das setzen des ~CS auf HIGH hat auch zur Folge, dass der Input Puffer
-	 * des Speicherchips gel�scht wird, sodass wir uns am Anfang einer Kommunikation
+	 * des Speicherchips gelöscht wird, sodass wir uns am Anfang einer Kommunikation
 	 * in einem definierten Zustand befinden
 	 */
+	//DDRB 和 PORTB有什么区别吗？
+	//Data Direction Register是表明某一位是输入还是输出
 	PORTB |= 0b00010000;
 
 	/* Setzen des SPI Control & SPI Status Registers
 	 * Beschreibung der Bits:
 	 * 1. SPI Interrupt Enable => Wollen wir nicht, also 0
 	 * 2. SPI Enable => 1
-	 * 3. Data Order => 0 bedeutet MSB first (ben�tigt f�r den Speicherchip)
+	 * 3. Data Order => 0 bedeutet MSB first (ben�tigt f�r den Speicherchip)
 	 * 4. Master Bit => Der Atmega ist der Master, also 1
 	 * 5. Clock Polarity => 0 bedeutet, dass wenn keine Daten gesendet werden, der PIN auf LOW liegt
 	 * 6. Clock Phase => 0 bedeutet CLK Signal bei steigender Flanke
-	 * 7. CLOCK SPEED => Setzt die Bits f�r die SPI Frequenz nach der Tabelle
+	 * 7. CLOCK SPEED => Setzt die Bits f�r die SPI Frequenz nach der Tabelle
 	 * 8. CLOCK SPEED => aus der Dokumentation des ATmegas (hier max. 10MHz)
 	 */
 	SPCR = 0b01010000;
 
-	// Setzen des SPI Status Registers. Wir m�ssen nur das letze Bit
+	// Setzen des SPI Status Registers. Wir m�ssen nur das letze Bit
 	// (CLK Double Speed) auf 1 setzen (s. Freq Tabelle AVR Doku)
 	SPSR |= 0b00000001;
 
