@@ -16,7 +16,7 @@
 
 extern uint8_t const __heap_start;
 
-const PROGMEM char intStr[] = "internal";
+const PROGMEM char intStr[] = "internal";//string?
 const PROGMEM char extStr[] = "external";
 
 Heap intHeap__={
@@ -36,7 +36,7 @@ Heap extHeap__= {
   .useStart = EXT_SRAM_START + EXT_MEMORY_SRAM/3,
   .useSize = 2 * (EXT_MEMORY_SRAM/3),
   .strategy = DEFAULT_ALLOCATION_STRATEGY,
-  .lastChunk = EXT_SRAM_START + EXT_MEMORY_SRAM/3,
+  .lastChunk = EXT_SRAM_START + EXT_MEMORY_SRAM/3,//=useStart?
   .name = extStr
 };
 

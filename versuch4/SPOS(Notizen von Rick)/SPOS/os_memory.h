@@ -15,8 +15,7 @@ void os_free(Heap* heap, MemAddr addr);
 /*
 This is an efficient reallocation routine. It is used to resize an existing allocated chunk of memory. 
 If possible, the position of the chunk remains the same. 
-It is only searched for a completely new chunk if everything else 
-does not fit For a more detailed description please use the exercise document.
+It is only searched for a completely new chunk if everything else does not fit 
 */
 MemAddr os_realloc (Heap *heap, MemAddr addr, uint16_t size);
 
