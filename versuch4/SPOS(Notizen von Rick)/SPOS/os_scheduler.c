@@ -7,8 +7,8 @@
 #include "lcd.h"
 #include "os_memheap_drivers.h"
 #include "os_memory.h"
-
 #include <avr/interrupt.h>
+#include <stdbool.h>
 
 //----------------------------------------------------------------------------
 // Private Types
@@ -33,7 +33,7 @@ Program* os_programs[MAX_NUMBER_OF_PROGRAMS];//Program *os_programs[MAX_NUMBER_O
 
 //! Index of process that is currently executed (default: idle)
 //#warning IMPLEMENT STH. HERE
-ProcessID currentProc;
+ProcessID currentProc=0;
 
 //----------------------------------------------------------------------------
 // Private variables
@@ -41,7 +41,7 @@ ProcessID currentProc;
 
 //! Currently active scheduling strategy
 //#warning IMPLEMENT STH. HERE
-SchedulingStrategy currentStrategy;
+SchedulingStrategy currSchedStrat;
 
 //! Count of currently nested critical sections
 //#warning IMPLEMENT STH. HERE
@@ -68,6 +68,10 @@ ISR(TIMER2_COMPA_vect) __attribute__((naked));
  *  for execution is derived with an exchangeable strategy. Finally the
  *  scheduler restores the next process for execution and releases control over
  *  the processor to that process.
+ * 计时器中断，实现了我们的调度器。运行中的进程的执行被暂停，
+ * 上下文被保存到堆栈中。然后扫描外围的任何输入事件。
+ * 如果一切正常，下一个执行的进程将以可交换的策略产生。
+ * 最后，调度器恢复下一个进程的执行，并将处理器的控制权交给该进程。
  */
 ISR(TIMER2_COMPA_vect) {
     //#warning IMPLEMENT STH. HERE
@@ -82,7 +86,6 @@ ISR(TIMER2_COMPA_vect) {
 	
 	//nach dem Setzen des Stackpointers auf den Scheduler-Stack die Prüfsumme des Prozessstacks des unterbrochenen Prozesses ermittelt und abspeichert.
     os_processes[os_getCurrentProc()].checksum = os_getStackChecksum(os_getCurrentProc());
-    
 	
     if(os_getInput() == 0b00001001) {
 		os_waitForNoInput();
@@ -93,8 +96,6 @@ ISR(TIMER2_COMPA_vect) {
 		os_processes[os_getCurrentProc()].state = OS_PS_READY; 
 	}
 	
-    
-
     //Scheduling-Strategie fuer naechsten Prozess auswaehlen//step 6
 	switch(os_getSchedulingStrategy()){
 		case OS_SS_EVEN:
@@ -127,7 +128,6 @@ ISR(TIMER2_COMPA_vect) {
     
 	//step 9 & 10
     restoreContext();
-
 }
 
 /*!
@@ -230,15 +230,11 @@ ProgramID os_lookupProgramID(Program* program) {
  *  \return The index of the new process or INVALID_PROCESS as specified in
  *          defines.h on failure
  */
-
-
-void os_dispatcher(){
+void os_dispatcher(){//调度
 	ProcessID i=currentProc;
 	Program *j=os_lookupProgramFunction(os_processes[i].progID);
-	(*j)();
-	
-	os_kill(i);
-	
+	(*j)();//run the newProc
+	os_kill(i);//kill the currentProc
 }
 
 bool os_kill(ProcessID pid){
@@ -255,27 +251,22 @@ bool os_kill(ProcessID pid){
 	os_processes[pid].sp.as_int = 0;//?
 	os_processes[pid].checksum = 0;
 	*/
-	/*
 	for (uint8_t i = 0; i < os_getHeapListLength() ; i++) {
 		os_freeProcessMemory(os_lookupHeap(i), pid);
 	}
-	*/
+
 	//we have tested the os_freeProcessMemory is still not so efficient,
 	//but here in Versuch 3 we don't have to call this here
 	//os_freeProcessMemory(intHeap,pid);
 	
-	if(pid==currentProc){
+	if(pid==currentProc){//only if (pid==currentProc) we endlessloop
 		criticalSectionCount=1;
-		os_leaveCriticalSection();
+		os_leaveCriticalSection();//release all the criticalSection
 		while(true){}
 	}
-	//only if pid==currentProc we endlessloop
-		
-	
 	os_leaveCriticalSection();
 	return true;
 }
-
 
 ProcessID os_exec(ProgramID programID, Priority priority) {
     //#warning IMPLEMENT STH. HERE
@@ -303,7 +294,6 @@ ProcessID os_exec(ProgramID programID, Priority priority) {
 	//void (*currentProgramPointer)(void)  = &os_dispatcher;
 	Program *currentProgramPointer=&os_dispatcher;
 	
-
 	if(currentProgramPointer == NULL){
         os_leaveCriticalSection();
 		return INVALID_PROCESS;
@@ -372,7 +362,6 @@ void os_initScheduler(void) {
 		os_processes[id].state = OS_PS_UNUSED;
     }
 	
-
     for(uint8_t id=0; id<MAX_NUMBER_OF_PROGRAMS; id++){
         if(os_checkAutostartProgram(id)){
             os_exec(id,DEFAULT_PRIORITY);
@@ -417,12 +406,10 @@ ProcessID os_getCurrentProc(void) {
  */
 uint8_t os_getNumberOfActiveProcs(void) {
     uint8_t num = 0;
-
     ProcessID i = 0;
     do {
         num += os_getProcessSlot(i)->state != OS_PS_UNUSED;
     } while (++i < MAX_NUMBER_OF_PROCESSES);
-
     return num;
 }
 
@@ -446,7 +433,7 @@ uint8_t os_getNumberOfRegisteredPrograms(void) {
  */
 void os_setSchedulingStrategy(SchedulingStrategy strategy) {
     //#warning IMPLEMENT STH. HERE
-    currentStrategy = strategy;
+    currSchedStrat = strategy;
 	//Versuch 3
 	os_resetSchedulingInformation(strategy);
 }
@@ -458,7 +445,7 @@ void os_setSchedulingStrategy(SchedulingStrategy strategy) {
  */
 SchedulingStrategy os_getSchedulingStrategy(void) {
     //#warning IMPLEMENT STH. HERE
-    return currentStrategy;
+    return currSchedStrat;
 }
 
 /*!

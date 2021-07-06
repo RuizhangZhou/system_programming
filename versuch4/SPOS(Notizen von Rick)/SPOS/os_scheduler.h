@@ -12,7 +12,6 @@
 #define _OS_SCHEDULER_H
 
 #include <stdbool.h>
-
 #include "defines.h"
 #include "os_process.h"
 
