@@ -24,6 +24,9 @@ void os_resetSchedulingInformation(SchedulingStrategy strategy) {
 				schedulingInfo.age[i]=0;
 			}
 			break;
+		case OS_SS_MULTI_LEVEL_FEEDBACK_QUEUE:
+			os_initSchedulingInformation();
+			break; 
 		default :
 			break;
 	}
@@ -39,6 +42,14 @@ void os_resetSchedulingInformation(SchedulingStrategy strategy) {
 void os_resetProcessSchedulingInformation(ProcessID id) {
     // This is a presence task
 	schedulingInfo.age[id]=0;
+
+	if(os_getSchedulingStrategy()==OS_SS_MULTI_LEVEL_FEEDBACK_QUEUE){
+		MLFQ_removePID(id);
+		// after execution of process add it to the back of its corresponding class 
+		uint8_t klass=MLFQ_MapToQueue(os_getProcessSlot(id)->priority);
+		pqueue_append(MLFQ_getQueue(klass), id);
+		schedulingInfo.mlfqSlices[id]=MLFQ_getDefaultTimeslice(klass);
+	}
 }
 
 /*!
@@ -116,7 +127,6 @@ ProcessID os_Scheduler_Random(Process const processes[], ProcessID current) {
 ProcessID os_Scheduler_RoundRobin(Process const processes[], ProcessID current) {
     // This is a presence task
 	schedulingInfo.timeSlice--;
-
 	if(schedulingInfo.timeSlice<=0 || !os_isRunnable(&processes[current])){
 		ProcessID pid=os_Scheduler_Even(processes,current);
 		//if no Process isRunnable, os_Schedular_Even will still return 0 back as the Leeflaufprozess
@@ -144,7 +154,6 @@ ProcessID os_Scheduler_InactiveAging(Process const processes[], ProcessID curren
 			schedulingInfo.age[i]+=processes[i].priority;
 		}
 	}
-
 	uint8_t pid=0;
 	//processes[0] is Leerlaufprozess, availabe prozess is processes[1] to processes[MAX_NUMBER_OF_PROCESSES-1]?
 	for(uint8_t i=1;i<MAX_NUMBER_OF_PROCESSES;i++){
@@ -153,7 +162,6 @@ ProcessID os_Scheduler_InactiveAging(Process const processes[], ProcessID curren
 			pid=i;
 			continue;
 		}
-
 		if(schedulingInfo.age[i]>schedulingInfo.age[pid]){
 			pid=i;
 		}else if(schedulingInfo.age[i]==schedulingInfo.age[pid]){
@@ -169,9 +177,7 @@ ProcessID os_Scheduler_InactiveAging(Process const processes[], ProcessID curren
 			*/
 		}
 	}
-	
 	schedulingInfo.age[pid]=processes[pid].priority;
-
     return pid;//if pid=0 here means that no other process isRunnable
 }
 
@@ -191,6 +197,145 @@ ProcessID os_Scheduler_RunToCompletion(Process const processes[], ProcessID curr
 	}else{
 		return os_Scheduler_Even(processes,current);
 	}
+}
+
+//MultiLevelFeedbackQueue strategy.
+ProcessID os_Scheduler_MLFQ(Process const processes[], ProcessID current){
+	for (uint8_t i = 0; i < 4; ++i) {
+		ProcessQueue *q = &schedulingInfo.qs[i];
+		if (pqueue_hasNext(q)) {
+			ProcessID next = pqueue_getFirst(q);
+
+			if (processes[next].state == OS_PS_UNUSED) {
+				pqueue_dropFirst(q);
+				if (pqueue_hasNext(q)) {
+					next = pqueue_getFirst(q);
+				} else {
+					continue;
+				}
+			}
+
+			if (processes[next].state == OS_PS_BLOCKED) {
+				pqueue_dropFirst(q);
+				pqueue_append(q, next);
+				ProcessID nextnext = pqueue_getFirst(q);
+				if (nextnext == next) {
+					continue;
+				} else {
+					next = nextnext;
+				}
+			}
+
+			if (--schedulingInfo.mlfqSlices[next] == 0) {
+				pqueue_dropFirst(q);
+				uint8_t a = i != 3 ? 1 : 0;
+				pqueue_append(q + a, next);
+				schedulingInfo.mlfqSlices[next] = 1 << (i + a);
+			}
+			return next;
+		}
+	}
+	return 0;
+}
+
+void os_initSchedulingInformation(){
+	// initialise level queues
+	for (uint8_t level = 0; level < 4; level++) {
+		pqueue_init(MLFQ_getQueue(level));
+	}
+	// set initial mlfqSlices
+	for (uint8_t id = 1; id < 8; id++) {
+		if (os_getProcessSlot(id)->state != OS_PS_UNUSED) {
+			uint8_t klass = MLFQ_MapToQueue(os_getProcessSlot(id)->priority);//beide MSBs der Priorität
+			pqueue_append(MLFQ_getQueue(klass), id);
+			schedulingInfo.mlfqSlices[id] = MLFQ_getDefaultTimeslice(klass);
+		}
+	}
+}
+
+bool isAnyProcReady(Process const processes[]){}
+
+//Removes a ProcessID from the given ProcessQueue.
+void pqueue_removePID(ProcessQueue *queue, ProcessID pid){
+	uint8_t oldSize=queue->size;
+	for(uint8_t i=0;i<oldSize;i++){//loop the original size times of the queue, to keep the original oder
+		if(pqueue_getFirst(queue)!=pid){//if not the pid to be deleted, then move it to the back of queue
+			pqueue_append(queue,pqueue_getFirst(queue));
+		}
+		pqueue_dropFirst(queue);
+		if(!pqueue_hasNext(queue)){
+			return;
+		}
+	}
+}
+
+//Function that removes the given ProcessID from the ProcessQueues.
+void MLFQ_removePID(ProcessID pid){
+	for (uint8_t i =0;i<4;i++){
+		pqueue_removePID(MLFQ_getQueue(i),pid);
+	}
+}
+
+//Returns the corresponding ProcessQueue.
+ProcessQueue *MLFQ_getQueue(uint8_t queueID){
+	if (queueID > 3){
+		 return NULL;
+	}
+	return &schedulingInfo.levelQueues[queueID];
+}
+
+//Returns the default number of timeslices for a specific ProcessQueue/priority class.
+uint8_t MLFQ_getDefaultTimeslice(uint8_t queueID){
+	return 1<<(3 - queueID);////klass:3(1),2(2),1(4),0(8)
+}
+
+//Maps a process-priority to a priority class.
+uint8_t MLFQ_MapToQueue(Priority prio){
+	return prio>>6;//beide MSBs der Priorität
+}
+
+//Initializes the given ProcessQueue with a predefined size. 
+void pqueue_init(ProcessQueue *queue){
+	queue->size=MAX_NUMBER_OF_PROCESSES;
+	queue->head=0;
+	queue->tail=0;
+	for(uint8_t i=0;i<8;i++){
+		queue->data[i]=0;
+	}
+}
+
+//Resets the given ProcessQueue. 
+void pqueue_reset(ProcessQueue *queue){
+	queue->head = 0;
+	queue->tail = 0;
+}
+
+//Checks whether there is next a ProcessID.
+uint8_t pqueue_hasNext(ProcessQueue *queue){
+	return queue->head != queue->tail;
+}
+
+//Returns the first ProcessID of the given ProcessQueue.
+ProcessID pqueue_getFirst(ProcessQueue *queue){
+	if (pqueue_hasNext(queue)){
+		return queue->data[queue->tail];
+	} else {
+		return 0;
+	}
+}
+
+//Drops the first ProcessID of the given ProcessQueue.
+void pqueue_dropFirst(ProcessQueue *queue){
+	if (pqueue_hasNext(queue)){
+		queue->data[queue->tail] = 0;
+		queue->tail = ((queue->tail) + 1) % (queue->size);
+	} 
+}
+
+//Appends a ProcessID to the given ProcessQueue.
+void pqueue_append(ProcessQueue *queue, ProcessID pid){
+	queue->data[queue->head] = pid;
+	queue->head = (queue->head + 1) % queue->size;
 }
 
 

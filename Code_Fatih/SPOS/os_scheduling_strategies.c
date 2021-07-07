@@ -96,7 +96,6 @@ void os_resetSchedulingInformation(SchedulingStrategy strategy) {
 }
 
 void os_removeFromMlfq(ProcessID id) {
-
 	ProcessQueue local_q;
 	pqueue_init(&local_q);
 	ProcessQueue *pq;
@@ -177,9 +176,9 @@ ProcessID os_Scheduler_Even(Process const processes[], ProcessID current) {
 ProcessID os_Scheduler_Random(Process const processes[], ProcessID current) {
 	
 	/* Problem: Wir kennen die Reihenfolge und den Zustand der Prozesse im Array processes nicht
-	 * Lösung: Wir legen ein eigenes Array an, in welches wir, wenn der Zustand des Prozesses
-	 *         RUNNING oder READY ist, den Index aus dem processes Array ablegen. Zusätzlich speichern wir die Anzahl der Prozesse.
-	 *         Am Ende können wir dann mithilfe von rand() und der Modulo-Operation zufällig einen Prozess zurückgeben
+	 * Lï¿½sung: Wir legen ein eigenes Array an, in welches wir, wenn der Zustand des Prozesses
+	 *         RUNNING oder READY ist, den Index aus dem processes Array ablegen. Zusï¿½tzlich speichern wir die Anzahl der Prozesse.
+	 *         Am Ende kï¿½nnen wir dann mithilfe von rand() und der Modulo-Operation zufï¿½llig einen Prozess zurï¿½ckgeben
 	 */
 	
 	uint8_t aktiveProzesse[MAX_NUMBER_OF_PROCESSES];
@@ -236,7 +235,7 @@ ProcessID os_Scheduler_RoundRobin(Process const processes[], ProcessID current) 
  */
 ProcessID os_Scheduler_InactiveAging(Process const processes[], ProcessID current) {
     
-	// Das Alter aller inaktiven Prozesse wird um deren Priorität erhöht
+	// Das Alter aller inaktiven Prozesse wird um deren Prioritï¿½t erhï¿½ht
 	for (uint8_t i = 1; i < MAX_NUMBER_OF_PROCESSES; i++) {
 		if (i != current && processes[i].state == OS_PS_READY) {
 			schedulingInfo.age[i] += processes[i].priority;
@@ -244,7 +243,7 @@ ProcessID os_Scheduler_InactiveAging(Process const processes[], ProcessID curren
 	}
 	
 	
-	// Der älteste Prozess wird ausgewählt.
+	// Der ï¿½lteste Prozess wird ausgewï¿½hlt.
 	uint8_t oldest_proc = 1;
 	for (uint8_t i = 2; i < MAX_NUMBER_OF_PROCESSES; i++) {
 		
@@ -258,23 +257,23 @@ ProcessID os_Scheduler_InactiveAging(Process const processes[], ProcessID curren
 		
 		if (schedulingInfo.age[i] == schedulingInfo.age[oldest_proc]) {
 			if (processes[i].priority == processes[oldest_proc].priority) {
-				// Existieren mehrere Prozesse mit gleichem Alter und gleicher Priorität,
-				// wird der Prozess mit der kleinsten Prozess-ID ausgewählt
+				// Existieren mehrere Prozesse mit gleichem Alter und gleicher Prioritï¿½t,
+				// wird der Prozess mit der kleinsten Prozess-ID ausgewï¿½hlt
 				oldest_proc = i < oldest_proc ? i : oldest_proc;
 			} else {
-				// Existieren mehrere Prozesse mit dem gleichen Alter, wird der höchstpriorisierte ausgewählt.
+				// Existieren mehrere Prozesse mit dem gleichen Alter, wird der hï¿½chstpriorisierte ausgewï¿½hlt.
 				oldest_proc = processes[i].priority > processes[oldest_proc].priority ? i : oldest_proc;
 			}
 		}
 	}
 	
 	// Nach dem ersten Prozesswechsel soll der Leerlaufprozess nur noch aufgerufen werden,
-	// sofern kein anderer Prozess zur Verfügung steht.
+	// sofern kein anderer Prozess zur Verfï¿½gung steht.
 	if (processes[oldest_proc].state != OS_PS_READY) {
 		return 0;
 	}
 	
-	// Das Alter des ausgewählten Prozesses auf dessen Priorität zurückgesetzt.
+	// Das Alter des ausgewï¿½hlten Prozesses auf dessen Prioritï¿½t zurï¿½ckgesetzt.
 	schedulingInfo.age[oldest_proc] = processes[oldest_proc].priority;	
 	
 	return oldest_proc;

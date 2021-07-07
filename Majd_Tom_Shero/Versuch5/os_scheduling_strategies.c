@@ -338,11 +338,9 @@ void pqueue_removePID(ProcessQueue *queue, ProcessID pid){
 	int counter = 0;
 	int curr = queue->tail;
 	while(counter<queue->size){
-		if (queue->data[curr] == pid)
-		{
+		if (queue->data[curr] == pid){
 			break;
-		}else
-		{
+		}else{
 			if (counter == queue->size-1){
 				return;
 			}
@@ -351,13 +349,11 @@ void pqueue_removePID(ProcessQueue *queue, ProcessID pid){
 		counter++;
 	}
 	queue->data[curr] = 0;
-	while (curr!=queue->tail)
-	{
+	while (curr!=queue->tail){
 		queue->data[curr] = queue->data[(curr-1)%queue->size];
 		curr = curr == 0? queue->size-1 : (curr-1)%queue->size;
 	}
 	queue->tail = (queue->tail+1)%queue->size;
-	
 }
 
 ProcessQueue* MLFQ_getQueue(uint8_t queueID	){
