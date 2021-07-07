@@ -75,9 +75,7 @@ Heap* os_lookupHeap(uint8_t index) {
 	if(index == 0){
 		return &intHeap__;
 	}
-	
 	return &extHeap__; 
-	
 }
 
 size_t os_getHeapListLength() {

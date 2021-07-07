@@ -642,7 +642,7 @@ void os_yield() {
 	
 	os_processes[currentProc].state = OS_PS_BLOCKED;
 	
-	// Stellen Sie vor dem manuellen Auf-ruf des Schedulers au�erdem sicher,
+	// Stellen Sie vor dem manuellen Aufruf des Schedulers außerdem sicher,
 	// dass der Scheduler auch weiterhin automatisch durch Timerinterrupts aufgerufen wird.
 	TIMSK2 |= 0b00000010;
 	
