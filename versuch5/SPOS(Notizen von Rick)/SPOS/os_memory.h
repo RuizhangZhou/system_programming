@@ -3,6 +3,7 @@
 
 #include "os_mem_drivers.h"
 #include "os_memheap_drivers.h"
+#include "os_scheduler.h"
 #include "os_process.h"
 #include <stdint.h>
 #include <stddef.h>
@@ -10,7 +11,22 @@
 
 MemAddr os_malloc(Heap* heap, uint16_t size);
 
+//Allocates a chunk of memory on the medium given by the driver and reserves it as shared memory.
+MemAddr os_sh_malloc(Heap *heap, size_t size);
+
 void os_free(Heap* heap, MemAddr addr);
+
+void os_sh_free(Heap *heap, MemAddr *addr);
+
+void os_sh_write(Heap const *heap, MemAddr const *ptr, uint16_t offset, MemValue const *dataSrc, uint16_t length);
+
+void os_sh_read(Heap const *heap, MemAddr const *ptr, uint16_t offset, MemValue *dataDest, uint16_t length);
+
+MemAddr os_sh_readOpen(Heap const *heap, MemAddr const *ptr);
+
+MemAddr os_sh_writeOpen(Heap const *heap, MemAddr const *ptr);
+
+void os_sh_close(Heap const *heap, MemAddr addr);
 
 /*
 This is an efficient reallocation routine. It is used to resize an existing allocated chunk of memory. 

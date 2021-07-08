@@ -202,10 +202,9 @@ ProcessID os_Scheduler_RunToCompletion(Process const processes[], ProcessID curr
 //MultiLevelFeedbackQueue strategy.
 ProcessID os_Scheduler_MLFQ(Process const processes[], ProcessID current){
 	for (uint8_t i = 0; i < 4; ++i) {
-		ProcessQueue *q = &schedulingInfo.qs[i];
+		ProcessQueue *q = &schedulingInfo.levelQueues[i];
 		if (pqueue_hasNext(q)) {
 			ProcessID next = pqueue_getFirst(q);
-
 			if (processes[next].state == OS_PS_UNUSED) {
 				pqueue_dropFirst(q);
 				if (pqueue_hasNext(q)) {
@@ -214,7 +213,6 @@ ProcessID os_Scheduler_MLFQ(Process const processes[], ProcessID current){
 					continue;
 				}
 			}
-
 			if (processes[next].state == OS_PS_BLOCKED) {
 				pqueue_dropFirst(q);
 				pqueue_append(q, next);
@@ -225,7 +223,6 @@ ProcessID os_Scheduler_MLFQ(Process const processes[], ProcessID current){
 					next = nextnext;
 				}
 			}
-
 			if (--schedulingInfo.mlfqSlices[next] == 0) {
 				pqueue_dropFirst(q);
 				uint8_t a = i != 3 ? 1 : 0;

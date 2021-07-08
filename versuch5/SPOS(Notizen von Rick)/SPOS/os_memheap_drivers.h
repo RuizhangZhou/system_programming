@@ -22,6 +22,8 @@ typedef struct {
     size_t useSize;
     AllocStrategy strategy;
     const char *name;//the name of this heap
+    MemAddr lowerBound[8];
+    MemAddr upperBound[8];
 } Heap;
 
 

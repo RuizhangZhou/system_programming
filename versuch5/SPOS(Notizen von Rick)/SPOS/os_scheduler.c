@@ -113,6 +113,9 @@ ISR(TIMER2_COMPA_vect) {
 		case OS_SS_INACTIVE_AGING:
 			currentProc = os_Scheduler_InactiveAging(os_processes,os_getCurrentProc()) ;
 			break;
+		case OS_SS_MULTI_LEVEL_FEEDBACK_QUEUE:
+			currentProc = os_Scheduler_MLFQ(os_processes,os_getCurrentProc()) ;
+			break;
 	}
 
     //Fortzusetzender Prozesszustand auf OS_PS_RUNNING setzen//step 7
@@ -505,7 +508,6 @@ void os_leaveCriticalSection(void) {
 		os_error("leaveCritSec count error");
 		return;
 	}
-	
     //save current interrupt state
 	uint8_t localGIEB = SREG & 0b10000000;
 	//disable interrupt
