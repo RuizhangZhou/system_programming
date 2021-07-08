@@ -23,7 +23,8 @@ typedef struct {
     AllocStrategy strategy;
     const char *name;//the name of this heap
     MemAddr lowerBound[8];
-    MemAddr upperBound[8];
+    MemAddr upperBound[8];//just record the first addr of every Chunk 
+    MemAddr numOfChunks[8];
 } Heap;
 
 

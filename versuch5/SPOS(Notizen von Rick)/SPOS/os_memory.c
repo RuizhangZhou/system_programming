@@ -108,6 +108,42 @@ void os_freeOwnerRestricted(Heap* heap, MemAddr addr, ProcessID owner){
     for(uint16_t offset=0;offset<chunkSize;offset++){
         setMapEntry(heap,firstByteOfChunk+offset,0);
     }
+
+    heap->numOfChunks[owner]--;
+    if(heap->numOfChunks[owner]==0){
+        heap->lowerBound[owner]=0;
+        heap->upperBound[owner]=0;
+    }else if(heap->numOfChunks[owner]==1){
+        if(heap->lowerBound[owner]==firstByteOfChunk){
+            heap->lowerBound[owner]=heap->upperBound[owner];
+        }
+        if(heap->upperBound[owner]==firstByteOfChunk){
+            heap->upperBound[owner]=heap->lowerBound[owner];
+        }
+    }else{//still exist more than 2 Chunks for this owner
+        if(heap->lowerBound[owner]==firstByteOfChunk){
+            MemAddr curAddr=firstByteOfChunk+chunkSize;
+            while(curAddr <= heap->upperBound[owner]){
+                if(getMapEntry(curAddr)==owner){
+                    heap->lowerBound[owner]=curAddr;
+                    break;
+                }else{
+                    curAddr++;
+                }
+            }
+        }
+        if(heap->upperBound[owner]==firstByteOfChunk){
+            MemAddr curAddr=firstByteOfChunk-1;
+            while(curAddr >= heap->lowerBound[owner]){
+                if(getMapEntry(curAddr)==owner){
+                    heap->upperBound[owner]=curAddr;
+                    break;
+                }else{
+                    curAddr++;
+                }
+            }
+        }
+    }
     os_leaveCriticalSection();
 }
 
@@ -130,6 +166,16 @@ MemAddr os_mallocOwner(Heap *heap, size_t size, ProcessID owner){
 			break;
 	}
 	if(res!=0){
+
+        if(heap->numOfChunks[owner]==0){
+            heap->lowerBound[owner]=res;
+            heap->upperBound[owner]=res;
+        }else{
+            if(res<heap->lowerBound[owner]) heap->lowerBound[owner]=res;
+            if(res>heap->upperBound[owner]) heap->upperBound[owner]=res;
+        }
+        heap->numOfChunks[owner]++;
+
 		setMapEntry(heap,res,owner);
 		for(MemAddr offset=1;offset<size;offset++){
 			setMapEntry(heap,res+offset,0xF);
@@ -303,9 +349,34 @@ void os_freeProcessMemory(Heap* heap, ProcessID pid){
 void moveChunk(Heap *heap,MemAddr oldChunk,size_t oldSize,MemAddr newChunk,size_t newSize){
     if (newSize < oldSize) os_error("newSize < oldSize");
     os_enterCriticalSection();
+    ProcessID owner=getMapEntry(oldChunk);
     //first of all set first map(ProcessID) of new Chunk(malloc)
-    setMapEntry(heap,newChunk,getMapEntry(oldChunk));
+    setMapEntry(heap,newChunk,owner);
 
+    if(heap->lowerBound[owner] == oldChunk){
+        MemAddr curAddr=oldChunk;
+        while(curAddr <= heap->upperBound[owner]){
+            if(getMapEntry(curAddr)==owner){
+                heap->lowerBound[owner]=curAddr;
+                break;
+            }else{
+                curAddr++;
+            }
+        }
+    }
+
+    if(heap->upperBound[owner] == oldChunk){
+        MemAddr curAddr=oldChunk;
+        while(curAddr >= heap->lowerBound[owner]){
+            if(getMapEntry(curAddr)==owner){
+                heap->upperBound[owner]=curAddr;
+                break;
+            }else{
+                curAddr--;
+            }
+        }
+    }
+    
     //set the map(0x0) and copy all the value of oldChunk(free)
 	for (MemAddr i = 0; i < oldSize; i++) {
 		heap->driver->write(newChunk + i, heap->driver->read(oldChunk + i));
@@ -359,7 +430,7 @@ MemAddr os_realloc(Heap *heap,MemAddr addr,uint16_t size){
     while(left>=os_getUseStart(heap)&&left+size>=chunkStart+chunkSize&&getMapEntry(left)==0){
         left--;
     }
-    if(left+size=chunkStart+chunkSize-1){//now left at the first addr before the newChunk
+    if(left+size==chunkStart+chunkSize-1){//now left at the first addr before the newChunk
         moveChunk(heap,chunkStart,chunkSize,left+1,size);
         os_leaveCriticalSection();
         return left+1;
