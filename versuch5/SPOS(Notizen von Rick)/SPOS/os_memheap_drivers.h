@@ -6,6 +6,17 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#define INT_HEAP_BOTTOM	(0X100+200)
+#define STACK_TOP	PROCESS_STACK_BOTTOM(MAX_NUMBER_OF_PROCESSES)
+#define INT_HEAP_TOP	STACK_TOP
+#define INT_HEAP_SIZE   (INT_HEAP_TOP-INT_HEAP_BOTTOM)
+
+#define EXT_SRAM_START (0x0)
+#define EXT_MEMORY_SRAM 65536//64KiB?
+#define DEFAULT_ALLOCATION_STRATEGY OS_MEM_FIRST
+
+extern uint8_t const __heap_start;
+
 typedef enum {
     OS_MEM_FIRST,
     OS_MEM_NEXT,
