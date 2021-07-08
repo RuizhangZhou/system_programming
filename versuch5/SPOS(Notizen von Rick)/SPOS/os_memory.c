@@ -192,7 +192,7 @@ MemAddr os_sh_malloc(Heap *heap, size_t size){
 void os_sh_free(Heap *heap, MemAddr *addr){
     os_enterCriticalSection();
     MemAddr firstByteOfChunk=os_getFirstByteOfChunk(heap, *addr);
-    if(getMapEntry(heap, firstByteOfChunk)<SH_MEM_CLOSED){
+    if(getMapEntry(heap, firstByteOfChunk) < SH_MEM_CLOSED){
         os_error("not a shared memory,cannot free");
         os_leaveCriticalSection();
         return;
@@ -222,11 +222,14 @@ MemAddr os_sh_readOpen(Heap const *heap, MemAddr const *ptr){
 		os_error("This is not SM!");
 		os_leaveCriticalSection();
 		return *ptr;
-	}else if (status==SH_READ_FIVE){
+	}
+	/*
+	else if (status==SH_READ_FIVE){
         os_error("Read Process reach MAX");
 		os_leaveCriticalSection();
 		return *ptr;
     }
+	*/
     while(getMapEntry(heap,firstByteOfChunk)==SH_WRITE){
         os_yield();//how can the yield() change the Status in MapArea?
     }
