@@ -26,6 +26,7 @@ Heap intHeap__={
 	.useStart=INT_HEAP_BOTTOM+INT_HEAP_SIZE/3,
 	.useSize=(INT_HEAP_SIZE/3)*2,
 	.strategy=DEFAULT_ALLOCATION_STRATEGY,
+	.nextFit = INT_HEAP_BOTTOM+INT_HEAP_SIZE/3,
 	.name=intStr
 };
 
@@ -36,7 +37,8 @@ Heap extHeap__= {
   .useStart = EXT_SRAM_START + EXT_MEMORY_SRAM/3,
   .useSize = 2 * (EXT_MEMORY_SRAM/3),
   .strategy = DEFAULT_ALLOCATION_STRATEGY,
-  .lastChunk = EXT_SRAM_START + EXT_MEMORY_SRAM/3,//=useStart?
+  .nextFit = EXT_SRAM_START + EXT_MEMORY_SRAM/3,
+  //.lastChunk = EXT_SRAM_START + EXT_MEMORY_SRAM/3,//=useStart?
   .name = extStr
 };
 
@@ -48,18 +50,8 @@ void os_initHeaps(){
         }
     }
 	*/
-	if((uint16_t)&__heap_start>=INT_HEAP_BOTTOM){
-		os_error("Error:GLOBAL VARS OVERLAP HEAP");
-	}
-	
-	for(MemAddr offset=0;offset<intHeap->mapSize;offset++){
-		intSRAM->write(intHeap->mapStart+offset,0);
-	}
-
+	intHeap->driver->init();
 	extHeap->driver->init();
-	for(MemAddr offset=0; offset<extHeap->mapSize;offset++) {
-		extSRAM->write(extHeap->mapStart+offset,0);
-	}
 }
 
 uint8_t os_getHeapListLength(){

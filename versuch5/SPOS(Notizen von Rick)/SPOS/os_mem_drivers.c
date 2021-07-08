@@ -8,15 +8,16 @@
 #include <avr/interrupt.h>
 #include <stdint.h>
 
-MemDriver intSRAM__={
-	.init=initSRAM_internal,
-	.read=readSRAM_internal,
-	.write=writeSRAM_internal,
-};
+
 
 //Pseudo-function to initialise the internal SRAM Actually, there is nothing to be done when initialising the internal SRAM, but we create this function, because MemDriver expects one for every memory device.
 void initSRAM_internal(void){
-    os_initHeaps();
+    if((uint16_t)&__heap_start>=INT_HEAP_BOTTOM){
+	    os_error("Error:GLOBAL VARS OVERLAP HEAP");
+    }
+    for(MemAddr offset=0;offset<intHeap->mapSize;offset++){
+	    intSRAM->write(intHeap->mapStart+offset,0);
+    }
 }
 
 //Private function to read a value from the internal SRAM It will not check if its call is valid. This has to be done on a higher level.
@@ -31,14 +32,12 @@ void writeSRAM_internal(MemAddr addr, MemValue value){
 	*pointer = value;
 }
 
-
-
-
-MemDriver extSRAM__={
-	.init=initSRAM_external,
-	.read=readSRAM_external,
-	.write=writeSRAM_external,
+MemDriver intSRAM__={
+	.init=initSRAM_internal,
+	.read=readSRAM_internal,
+	.write=writeSRAM_internal,
 };
+
 
 //Activates the external SRAM as SPI slave.
 void select_memory(){
@@ -99,4 +98,12 @@ void writeSRAM_external (MemAddr addr, MemValue value){
 	os_leaveCriticalSection();
 }
 
-void initMemoryDevices(){}
+MemDriver extSRAM__={
+	.init=initSRAM_external,
+	.read=readSRAM_external,
+	.write=writeSRAM_external,
+};
+
+void initMemoryDevices(){
+	os_initHeaps();
+}

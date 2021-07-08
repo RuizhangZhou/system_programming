@@ -21,6 +21,7 @@ typedef struct {
     MemAddr useStart;
     size_t useSize;
     AllocStrategy strategy;
+	MemAddr nextFit;
     const char *name;//the name of this heap
     MemAddr lowerBound[8];
     MemAddr upperBound[8];//just record the first addr of every Chunk 

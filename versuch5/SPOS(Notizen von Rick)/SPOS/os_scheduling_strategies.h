@@ -14,6 +14,14 @@
 #include "os_scheduler.h"
 #include "defines.h"
 
+//Ringbuffer for process queueing.
+typedef struct{
+    ProcessID data[MAX_NUMBER_OF_PROCESSES];
+    uint8_t size;
+    ProcessID head;
+    ProcessID tail;
+}ProcessQueue;
+
 //! Structure used to store specific scheduling informations such as a time slice
 // This is a presence task
 typedef struct {
@@ -23,13 +31,6 @@ typedef struct {
     uint8_t mlfqSlices[MAX_NUMBER_OF_PROCESSES];
 }SchedulingInformation;
 
-//Ringbuffer for process queueing.
-typedef struct{
-    ProcessID data[MAX_NUMBER_OF_PROCESSES];
-    uint8_t size;
-    ProcessID head;
-    ProcessID tail;
-}ProcessQueue;
 
 //Initialises the scheduling information.
 void os_initSchedulingInformation();

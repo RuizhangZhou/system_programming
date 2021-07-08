@@ -77,7 +77,7 @@ MemAddr os_getFirstByteOfChunk(Heap const* heap, MemAddr addr){
 }
 
 ProcessID getOwnerOfChunk(Heap* heap, MemAddr addr){
-	return=getMapEntry(heap,os_getFirstByteOfChunk(heap,addr));
+	return getMapEntry(heap,os_getFirstByteOfChunk(heap,addr));
 }
 
 uint16_t os_getChunkSize(Heap const* heap, MemAddr addr){
@@ -124,7 +124,7 @@ void os_freeOwnerRestricted(Heap* heap, MemAddr addr, ProcessID owner){
         if(heap->lowerBound[owner]==firstByteOfChunk){
             MemAddr curAddr=firstByteOfChunk+chunkSize;
             while(curAddr <= heap->upperBound[owner]){
-                if(getMapEntry(curAddr)==owner){
+                if(getMapEntry(heap,curAddr)==owner){
                     heap->lowerBound[owner]=curAddr;
                     break;
                 }else{
@@ -135,7 +135,7 @@ void os_freeOwnerRestricted(Heap* heap, MemAddr addr, ProcessID owner){
         if(heap->upperBound[owner]==firstByteOfChunk){
             MemAddr curAddr=firstByteOfChunk-1;
             while(curAddr >= heap->lowerBound[owner]){
-                if(getMapEntry(curAddr)==owner){
+                if(getMapEntry(heap,curAddr)==owner){
                     heap->upperBound[owner]=curAddr;
                     break;
                 }else{
@@ -221,13 +221,13 @@ MemAddr os_sh_readOpen(Heap const *heap, MemAddr const *ptr){
     if (status < SH_MEM_CLOSED){ 
 		os_error("This is not SM!");
 		os_leaveCriticalSection();
-		return ptr*;
+		return *ptr;
 	}else if (status==SH_READ_FIVE){
         os_error("Read Process reach MAX");
 		os_leaveCriticalSection();
-		return resAddr;
+		return *ptr;
     }
-    while(getMapEntry(firstByteOfChunk)==SH_WRITE){
+    while(getMapEntry(heap,firstByteOfChunk)==SH_WRITE){
         os_yield();//how can the yield() change the Status in MapArea?
     }
     if(status==SH_MEM_CLOSED){
@@ -247,9 +247,9 @@ MemAddr os_sh_writeOpen(Heap const *heap, MemAddr const *ptr){
     if (getMapEntry(heap, firstByteOfChunk) < SH_MEM_CLOSED){ 
 		os_error("This is not SM!");
 		os_leaveCriticalSection();
-		return resAddr;
+		return *ptr;
 	}
-    while(getMapEntry(firstByteOfChunk)!=SH_MEM_CLOSED){
+    while(getMapEntry(heap,firstByteOfChunk)!=SH_MEM_CLOSED){
         os_yield();
     }
     setMapEntry(heap,firstByteOfChunk,SH_WRITE);
@@ -349,14 +349,14 @@ void os_freeProcessMemory(Heap* heap, ProcessID pid){
 void moveChunk(Heap *heap,MemAddr oldChunk,size_t oldSize,MemAddr newChunk,size_t newSize){
     if (newSize < oldSize) os_error("newSize < oldSize");
     os_enterCriticalSection();
-    ProcessID owner=getMapEntry(oldChunk);
+    ProcessID owner=getMapEntry(heap,oldChunk);
     //first of all set first map(ProcessID) of new Chunk(malloc)
     setMapEntry(heap,newChunk,owner);
 
     if(heap->lowerBound[owner] == oldChunk){
         MemAddr curAddr=oldChunk;
         while(curAddr <= heap->upperBound[owner]){
-            if(getMapEntry(curAddr)==owner){
+            if(getMapEntry(heap,curAddr)==owner){
                 heap->lowerBound[owner]=curAddr;
                 break;
             }else{
@@ -368,7 +368,7 @@ void moveChunk(Heap *heap,MemAddr oldChunk,size_t oldSize,MemAddr newChunk,size_
     if(heap->upperBound[owner] == oldChunk){
         MemAddr curAddr=oldChunk;
         while(curAddr >= heap->lowerBound[owner]){
-            if(getMapEntry(curAddr)==owner){
+            if(getMapEntry(heap,curAddr)==owner){
                 heap->upperBound[owner]=curAddr;
                 break;
             }else{
@@ -385,7 +385,7 @@ void moveChunk(Heap *heap,MemAddr oldChunk,size_t oldSize,MemAddr newChunk,size_
 
     //then set all rest map(0xF) of new Chunk(malloc)
     for(MemAddr i =1;i<newSize;i++){
-        setMapEntry(heap,newChunk+i;0xF);
+        setMapEntry(heap,newChunk+i,0xF);
     }
 	os_leaveCriticalSection();
 }	
@@ -427,7 +427,7 @@ MemAddr os_realloc(Heap *heap,MemAddr addr,uint16_t size){
     }
     //3.try to expand before the chunk
     MemAddr left=chunkStart-1;//the first addr before the oldChunk
-    while(left>=os_getUseStart(heap)&&left+size>=chunkStart+chunkSize&&getMapEntry(left)==0){
+    while(left>=os_getUseStart(heap)&&left+size>=chunkStart+chunkSize&&getMapEntry(heap,left)==0){
         left--;
     }
     if(left+size==chunkStart+chunkSize-1){//now left at the first addr before the newChunk

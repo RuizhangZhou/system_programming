@@ -128,7 +128,8 @@ void os_init(void) {
     delayMs(2000);
 
     os_initScheduler();
-	init();//init mem_driver
+	
+	initMemoryDevices();//init mem_driver
 	
 
     os_systemTime_reset();

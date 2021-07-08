@@ -23,19 +23,19 @@ MemAddr os_Memory_NextFit (Heap *heap, size_t size){
 	size_t zeroChunkSize = 0;
 	MemAddr slow = heap->nextFit;
 	MemAddr fast = heap->nextFit;
-	while (fast < (heap->useAreaStart + heap->useAreaSize)) {
-		if (os_getMapEntry(heap, slow) != 0x0) {
+	while (fast < (heap->useStart + heap->useSize)) {
+		if (getMapEntry(heap, slow) != 0x0) {
 			slow++;
 			fast = slow;
 			// das continue ist, damit fast sicher innerhalb der use-area ist
 			continue;
 		}
-		if (os_getMapEntry(heap, fast) != 0x0) {
+		if (getMapEntry(heap, fast) != 0x0) {
 			zeroChunkSize = 0;
 			slow = fast;
 			continue;
 		}
-		if (os_getMapEntry(heap, fast) == 0x0 && zeroChunkSize < size) {
+		if (getMapEntry(heap, fast) == 0x0 && zeroChunkSize < size) {
 			fast++;
 			zeroChunkSize++;
 		}
@@ -50,24 +50,24 @@ MemAddr os_Memory_NextFit (Heap *heap, size_t size){
 
 MemAddr os_Memory_BestFit (Heap *heap, size_t size){
 	size_t currentChunkSize = 0;
-	size_t smallestFittingChunkSize = heap->useAreaSize;
-	MemAddr slow = heap->useAreaStart;
-	MemAddr fast = heap->useAreaStart;
+	size_t smallestFittingChunkSize = heap->useSize;
+	MemAddr slow = heap->useStart;
+	MemAddr fast = heap->useStart;
 	MemAddr best = 0;
 
-	while (fast < (heap->useAreaStart + heap->useAreaSize)) {
-		if (os_getMapEntry(heap, slow) != 0x0) {
+	while (fast < (heap->useStart + heap->useSize)) {
+		if (getMapEntry(heap, slow) != 0x0) {
 			slow++;
 			fast = slow;
 			// das continue ist, damit fast sicher innerhalb der use-area ist
 			continue;
 		}
-		if (os_getMapEntry(heap, fast) != 0x0) {
+		if (getMapEntry(heap, fast) != 0x0) {
 			currentChunkSize = 0;
 			slow = fast;
 			continue;
 		}
-		while ((fast < (heap->useAreaStart + heap->useAreaSize)) && os_getMapEntry(heap, fast) == 0x0) {
+		while ((fast < (heap->useStart + heap->useSize)) && getMapEntry(heap, fast) == 0x0) {
 			fast++;
 			currentChunkSize++;
 		}
@@ -82,22 +82,22 @@ MemAddr os_Memory_BestFit (Heap *heap, size_t size){
 MemAddr os_Memory_WorstFit (Heap *heap, size_t size){
 	size_t currentChunkSize = 0;
 	size_t biggestChunkSize = 0;
-	MemAddr slow = heap->useAreaStart;
-	MemAddr fast = heap->useAreaStart;
+	MemAddr slow = heap->useStart;
+	MemAddr fast = heap->useStart;
 	MemAddr worst = 0;
-	while (fast < (heap->useAreaStart + heap->useAreaSize)) {
-		if (os_getMapEntry(heap, slow) != 0x0) {
+	while (fast < (heap->useStart + heap->useSize)) {
+		if (getMapEntry(heap, slow) != 0x0) {
 			slow++;
 			fast = slow;
 			// das continue ist, damit fast sicher innerhalb der use-area ist
 			continue;
 		}
-		if (os_getMapEntry(heap, fast) != 0x0) {
+		if (getMapEntry(heap, fast) != 0x0) {
 			currentChunkSize = 0;
 			slow = fast;
 			continue;
 		}
-		while ((fast < (heap->useAreaStart + heap->useAreaSize)) && os_getMapEntry(heap, fast) == 0x0) {
+		while ((fast < (heap->useStart + heap->useSize)) && getMapEntry(heap, fast) == 0x0) {
 			fast++;
 			currentChunkSize++;
 		}

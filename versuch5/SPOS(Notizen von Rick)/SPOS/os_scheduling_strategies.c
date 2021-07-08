@@ -250,7 +250,7 @@ void os_initSchedulingInformation(){
 	}
 }
 
-bool isAnyProcReady(Process const processes[]){}
+//bool isAnyProcReady(Process const processes[]){}
 
 //Removes a ProcessID from the given ProcessQueue.
 void pqueue_removePID(ProcessQueue *queue, ProcessID pid){
