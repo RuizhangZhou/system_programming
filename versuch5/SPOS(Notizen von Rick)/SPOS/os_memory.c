@@ -271,13 +271,14 @@ void os_sh_close(Heap const *heap, MemAddr addr){
 
 void os_sh_write(Heap const *heap, MemAddr const *ptr, uint16_t offset, MemValue const *dataSrc, uint16_t length){
     MemAddr temp =  os_sh_writeOpen(heap,ptr);
-    if(temp+offset+length > heap->useStart+heap->useSize){
+	MemAddr firstByteOfChunk=os_getFirstByteOfChunk(heap,temp);
+    if(firstByteOfChunk+offset+length > heap->useStart+heap->useSize){
 	    os_error("write out of this HEAP");
-	    }else if(offset+length > os_getChunkSize(heap,temp) ){
+	}else if(offset+length > os_getChunkSize(heap,firstByteOfChunk) ){
 	    os_error("write out of this SM");
-	    }else{
+	}else{
 	    for (MemAddr i = 0; i < length; ++i) {
-		    heap->driver->write(temp + offset + i, *(dataSrc + i));
+		    heap->driver->write(firstByteOfChunk + offset + i, *(dataSrc + i));
 	    }
     }
     os_sh_close(heap, temp);
@@ -285,13 +286,14 @@ void os_sh_write(Heap const *heap, MemAddr const *ptr, uint16_t offset, MemValue
 
 void os_sh_read(Heap const *heap, MemAddr const *ptr, uint16_t offset, MemValue *dataDest, uint16_t length){
     MemAddr temp =  os_sh_readOpen(heap,ptr);
-    if(temp+offset+length > heap->useStart+heap->useSize){
+	MemAddr firstByteOfChunk=os_getFirstByteOfChunk(heap,temp);
+    if(firstByteOfChunk+offset+length > heap->useStart+heap->useSize){
 	    os_error("Read out of this HEAP");
-	    }else if(offset+length > os_getChunkSize(heap,temp) ){
+	}else if(offset+length > os_getChunkSize(heap,firstByteOfChunk) ){
 	    os_error("Read out of this SM");
-	    }else{
+	}else{
 	    for (MemAddr i = 0; i < length; ++i) {
-		    *(dataDest + i) = heap->driver->read(temp + offset + i);
+		    *(dataDest + i) = heap->driver->read(firstByteOfChunk + offset + i);
 	    }
     }
     os_sh_close(heap, temp);
