@@ -265,7 +265,9 @@ bool os_kill(ProcessID pid){
 	if(pid==currentProc){//only if (pid==currentProc) we endlessloop
 		criticalSectionCount=1;
 		os_leaveCriticalSection();//release all the criticalSection
-		while(true){}
+		while(true){
+			os_yield();
+		}
 	}
 	os_leaveCriticalSection();
 	return true;
@@ -291,7 +293,8 @@ void os_yield(){
 	TIMSK2 &= 0b11111101;
 	criticalSectionCount=oldCriticalSectionCount;
 	// stellt GIEB wieder her, lässt rest von SREG so wie's is.
-	SREG |= GIEB;//SREG=0b0XXXXXXXX; GIEB=0bX00000000 right now
+	SREG = (SREG&0b01111111)| GIEB;//SREG=0bYXXXXXXXX; GIEB=0bX00000000 right now
+	 
 	os_leaveCriticalSection();
 }
 

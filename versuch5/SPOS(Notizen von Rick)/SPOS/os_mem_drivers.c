@@ -13,9 +13,11 @@
 
 //Pseudo-function to initialise the internal SRAM Actually, there is nothing to be done when initialising the internal SRAM, but we create this function, because MemDriver expects one for every memory device.
 void initSRAM_internal(void){
+	
     if((uint16_t)&__heap_start>=INT_HEAP_BOTTOM){
 	    os_error("Error:GLOBAL VARS OVERLAP HEAP");
     }
+	
     for(MemAddr offset=0;offset<intHeap->mapSize;offset++){
 	    intSRAM->write(intHeap->mapStart+offset,0);
     }

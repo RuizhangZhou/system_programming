@@ -203,20 +203,43 @@ ProcessID os_Scheduler_RunToCompletion(Process const processes[], ProcessID curr
 ProcessID os_Scheduler_MLFQ(Process const processes[], ProcessID current){
 	for (uint8_t id = 0; id < 4; id++) {
 		ProcessQueue *queue = MLFQ_getQueue(id);
-		uint8_t numInQueue=(queue->tail+MAX_NUMBER_OF_PROCESSES-queue->head)%MAX_NUMBER_OF_PROCESSES;
+		uint8_t numInQueue=(queue->head+ MAX_NUMBER_OF_PROCESSES - queue->tail) % MAX_NUMBER_OF_PROCESSES;//tail:7 head:0 
 		for (uint8_t j=0;j<numInQueue;j++) {
 			ProcessID next = pqueue_getFirst(queue);
 			if(processes[next].state==OS_PS_UNUSED){
 				pqueue_dropFirst(queue);
 			}else if(processes[next].state==OS_PS_READY){
-				return next;
+				if(schedulingInfo.mlfqSlices[next]==0){
+					pqueue_dropFirst(queue);
+					if(id==3){
+						pqueue_append(queue, next);
+						schedulingInfo.mlfqSlices[next]=MLFQ_getDefaultTimeslice(id);
+					}else{//id=0,1,2
+						pqueue_append( MLFQ_getQueue(id+1),next);
+						schedulingInfo.mlfqSlices[next]=MLFQ_getDefaultTimeslice(id+1);
+					}
+				}else{//the ready Process still has time slices
+					schedulingInfo.mlfqSlices[next]--;
+					return next;
+				}
 			}else if(processes[next].state==OS_PS_BLOCKED){
-				pqueue_dropFirst(queue);
-				pqueue_append(queue, next);
+				if(schedulingInfo.mlfqSlices[next]==0 && id<=2){
+					pqueue_dropFirst(queue);
+					if(id==3){
+						pqueue_append(queue, next);
+						schedulingInfo.mlfqSlices[next]=MLFQ_getDefaultTimeslice(id);
+					}else{//id=0,1,2
+						pqueue_append( MLFQ_getQueue(id+1),next);
+						schedulingInfo.mlfqSlices[next]=MLFQ_getDefaultTimeslice(id+1);
+					}	
+				}else{//it still has timeslices 
+					pqueue_dropFirst(queue);
+					pqueue_append(queue, next);
+				}
 			}
 		}
 	}
-	return 0;
+	return 0;	
 }
 
 void os_initSchedulingInformation(){

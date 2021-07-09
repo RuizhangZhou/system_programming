@@ -160,4 +160,5 @@ void os_errorPStr(char const* str) {
     if(vorSREG) {//if vorSREG=0,we don't need to do anything, cuz MSB of SREG is 0 now, we just keep the SREG the same as it originally was
         SREG |= 0b10000000;
     }
+	
 }
