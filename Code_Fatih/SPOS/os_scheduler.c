@@ -622,16 +622,16 @@ bool os_kill(ProcessID pid) {
 }
 
 /*!
- *  Der aufrufende Prozess gibt die CPU ab, speichert seinen lokalen Zustand (critical sections, Global Interrupt Enable Bit), auf seinem Stack
- *  re-aktiviert den Scheduler und ruft ebendiesen auf.
- *
- *  Wenn das Programm dann irgendwann mal wieder reingescheduled wird, macht's an der Stelle weiter; stellt den lokalen Zustand wieder her und weiter return't.
+ *  Der aufrufende Prozess gibt die CPU ab, speichert seinen lokalen Zustand (critical sections,
+ *  Global Interrupt Enable Bit), auf seinem Stack re-aktiviert den Scheduler und ruft eben diesen auf.
+ *  Wenn das Programm dann irgendwann mal wieder reingescheduled wird, macht's an der Stelle weiter; 
+ *  stellt den lokalen Zustand wieder her und weiter return't.
  */
 void os_yield() {
 
 	os_enterCriticalSection();
 
-	uint8_t currentCritSecLvl = criticalSectionCount;
+	uint8_t currentCritSecLvl = criticalSectionCount; 
 	criticalSectionCount = 0;
 	
 	// Sichern des MSB aka. GIEB aus dem SREG
