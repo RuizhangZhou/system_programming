@@ -201,35 +201,19 @@ ProcessID os_Scheduler_RunToCompletion(Process const processes[], ProcessID curr
 
 //MultiLevelFeedbackQueue strategy.
 ProcessID os_Scheduler_MLFQ(Process const processes[], ProcessID current){
-	for (uint8_t i = 0; i < 4; ++i) {
-		ProcessQueue *q = &schedulingInfo.levelQueues[i];
-		if (pqueue_hasNext(q)) {
-			ProcessID next = pqueue_getFirst(q);
-			if (processes[next].state == OS_PS_UNUSED) {
-				pqueue_dropFirst(q);
-				if (pqueue_hasNext(q)) {
-					next = pqueue_getFirst(q);
-				} else {
-					continue;
-				}
+	for (uint8_t id = 0; id < 4; id++) {
+		ProcessQueue *queue = MLFQ_getQueue(id);
+		uint8_t numInQueue=(queue->tail+MAX_NUMBER_OF_PROCESSES-queue->head)%MAX_NUMBER_OF_PROCESSES;
+		for (uint8_t j=0;j<numInQueue;j++) {
+			ProcessID next = pqueue_getFirst(queue);
+			if(processes[next].state==OS_PS_UNUSED){
+				pqueue_dropFirst(queue);
+			}else if(processes[next].state==OS_PS_READY){
+				return next;
+			}else if(processes[next].state==OS_PS_BLOCKED){
+				pqueue_dropFirst(queue);
+				pqueue_append(queue, next);
 			}
-			if (processes[next].state == OS_PS_BLOCKED) {
-				pqueue_dropFirst(q);
-				pqueue_append(q, next);
-				ProcessID nextnext = pqueue_getFirst(q);
-				if (nextnext == next) {
-					continue;
-				} else {
-					next = nextnext;
-				}
-			}
-			if (--schedulingInfo.mlfqSlices[next] == 0) {
-				pqueue_dropFirst(q);
-				uint8_t a = i != 3 ? 1 : 0;
-				pqueue_append(q + a, next);
-				schedulingInfo.mlfqSlices[next] = 1 << (i + a);
-			}
-			return next;
 		}
 	}
 	return 0;
