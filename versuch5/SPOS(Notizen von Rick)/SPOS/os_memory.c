@@ -230,8 +230,9 @@ MemAddr os_sh_readOpen(Heap const *heap, MemAddr const *ptr){
 		return *ptr;
     }
 	*/
-    while(getMapEntry(heap,firstByteOfChunk)==SH_WRITE){
+    while(status==SH_WRITE || status>=SH_READ_FIVE){
         os_yield();//how can the yield() change the Status in MapArea?
+		status=getMapEntry(heap,firstByteOfChunk);
     }
     if(status==SH_MEM_CLOSED){
         setMapEntry(heap,firstByteOfChunk,SH_READ_ONE);
@@ -278,7 +279,7 @@ void os_sh_close(Heap const *heap, MemAddr addr){
 void os_sh_write(Heap const *heap, MemAddr const *ptr, uint16_t offset, MemValue const *dataSrc, uint16_t length){
     MemAddr firstByteOfChunk=os_getFirstByteOfChunk(heap,*ptr);
     if(offset+length>os_getChunkSize(heap,firstByteOfChunk)){
-        os_error("Read out of this SM");
+        os_error("write out of this SM");
 		return;
     }
     os_sh_writeOpen(heap, &firstByteOfChunk);

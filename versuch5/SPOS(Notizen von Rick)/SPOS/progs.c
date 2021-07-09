@@ -34,8 +34,7 @@ PROGRAM(1, AUTOSTART) {
     MemAddr allocs[NUM_MAL];
     volatile int i, j;
     MemAddr opBlock1, opBlock2;
-	
-	/*
+
     // Allocate some shared memory
     lcd_writeProgString(PSTR("1: Allocating..."));
     delayMs(10 * DELAY);
@@ -206,7 +205,7 @@ PROGRAM(1, AUTOSTART) {
         delayMs(10 * DELAY);
     }
     lcd_clear();
-	*/
+
     // Check parallel reading
     lcd_writeProgString(PSTR("8: Multiple access..."));
     delayMs(10 * DELAY);
