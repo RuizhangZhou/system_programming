@@ -16,9 +16,9 @@
 
 //! Structure used to store specific scheduling informations such as a time slice
 // This is a presence task
-typedef struct {
+typedef struct{
     uint8_t timeSlice;
-    Age[MAX_NUMBER_OF_PROCESSES] age;
+    Age age[MAX_NUMBER_OF_PROCESSES];
 } SchedulingInformation;
 
 // Global variable

@@ -114,9 +114,9 @@ ProcessID os_Scheduler_RoundRobin(Process const processes[], ProcessID current) 
 	// Decrement time slice
 	schedulingInfo.timeSlice--;
 
-	if (schedulingInfo.timeSlice < 1 || !os_isRunnable(processes[current])) {
+	if (schedulingInfo.timeSlice < 1 || !os_isRunnable(processes + current)) {
 		ProcessID nextProc = os_Scheduler_Even(processes, current);
-		schedulingInfo.timeSlice = processes[current].priority;
+		schedulingInfo.timeSlice = processes[nextProc].priority;
 		return nextProc;
 	}
 	return current;
@@ -143,7 +143,7 @@ ProcessID os_Scheduler_InactiveAging(Process const processes[], ProcessID curren
 
 	ProcessID nextProc = 1;
 	for (uint8_t i = 2; i < MAX_NUMBER_OF_PROCESSES; i++) {
-		if (processes[i] != OS_PS_READY) {
+		if (processes[i].state != OS_PS_READY) {
 			continue;
 		}
 		if (schedulingInfo.age[i] > schedulingInfo.age[nextProc]) {

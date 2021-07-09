@@ -5,8 +5,10 @@
 #include "os_taskman.h"
 #include "os_core.h"
 #include "lcd.h"
-
+#include "os_memheap_drivers.h"
+#include "os_memory.h"
 #include <avr/interrupt.h>
+#include <stdbool.h>
 
 //----------------------------------------------------------------------------
 // Private Types
@@ -277,16 +279,16 @@ ProcessID os_exec(ProgramID programID, Priority priority) {
 	// Get high and low byte
 	uint8_t functionPointerBytes[2];
 	functionPointerBytes[0] = funcPointer >> 8;
-	functionPointerBytes[1] = funcPointer & 0x00FF
+	functionPointerBytes[1] = funcPointer & 0x00FF;
 	
-	*(newProcessPtr->sp.as_ptr)=low_byte;
-	newProcessPtr->sp.as_ptr--;
-	*(newProcessPtr->sp.as_ptr)=high_byte;
-	newProcessPtr->sp.as_ptr--;//
+	*(newProcessPtr->sp.as_ptr)=functionPointerBytes[1];
+	newProcessPtr->sp.as_int--;
+	*(newProcessPtr->sp.as_ptr)=functionPointerBytes[0];
+	newProcessPtr->sp.as_int--;//
 	
 	for(uint8_t i = 0; i < 33; i++){
 		*(newProcessPtr->sp.as_ptr) = 0b00000000; //all set as 0b00000000
-		newProcessPtr->sp.as_ptr--; // Dekrement stackpointer // alternative: set by PROCESS_STACK_BOTTOM(PID)
+		newProcessPtr->sp.as_int--; // Dekrement stackpointer // alternative: set by PROCESS_STACK_BOTTOM(PID)
 	}
 	
     newProcessPtr->checksum = os_getStackChecksum(pid);

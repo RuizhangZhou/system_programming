@@ -1,480 +1,305 @@
 //-------------------------------------------------
-//          TestSuite: Scheduling Strategien
+//          TestSuite: FreeMap
 //-------------------------------------------------
 
 #include "lcd.h"
 #include "util.h"
 #include "os_scheduler.h"
-#include "os_scheduling_strategies.h"
+#include "os_memory.h"
+#include "os_memheap_drivers.h"
+#include "os_input.h"
+
 #include <avr/interrupt.h>
-#include <util/delay.h>
-#include <stdlib.h>
+#include <string.h>
 
-#define PHASE_1 1
-#define PHASE_2 1
-#define PHASE_3 1
-#define PHASE_4 1
+//! The heap-driver we expect to find at position 0 of the heap-list
+#define DRIVER intHeap
+//! Number of bytes we allocate by hand. Must be even and >2.
+#define SIZE 10
+//! The minimal size of the map we accept
+#define MAPSIZE 100
 
-
-volatile ProcessID capture[32];
-volatile uint8_t i = 0;
-
-#define LCD_DELAY 2000
-
-ISR(TIMER2_COMPA_vect);
-
-// Array containing the correct output values for all four scheduling strategies.
-const ProcessID scheduling[SCHEDULING_STRATEGY_COUNT][32] PROGMEM  =  {
-    [OS_SS_EVEN] = {1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2},
-    [OS_SS_RANDOM] = {1, 3, 1, 1, 3, 3, 3, 3, 1, 1, 3, 2, 3, 3, 3, 1, 3, 2, 1, 2, 1, 1, 2, 2, 1, 3, 1, 1, 1, 1, 2, 1},
-    [OS_SS_ROUND_ROBIN] = {1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 2, 2, 2, 2, 2, 3},
-    [OS_SS_INACTIVE_AGING] = {1, 3, 3, 3, 2, 3, 3, 3, 2, 3, 1, 3, 2, 3, 3, 3, 2, 3, 3, 1, 3, 2, 3, 3, 3, 2, 3, 3, 1, 3, 2, 3},
-    [OS_SS_RUN_TO_COMPLETION] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-};
+//! Defines if the first phase is executed
+#define FREEMAP_PHASE_1 (1)
+//! Defines if the second phase is executed
+#define FREEMAP_PHASE_2 (1)
+//! Defines if the third phase is executed
+#define FREEMAP_PHASE_3 (1)
 
 
-//! Tests if strategy is implemented (default return is 0)
-uint8_t strategyImplemented() {
-    ProcessID nextId = 0;
-    Process processes[MAX_NUMBER_OF_PROCESSES];
+//! Output delay after writing strings to the LCD
+#define LCD_DELAY 1000
+//! Halts execution of program
+#define HALT      do{}while(1)
 
-    // Copy current os_processes
-    for (ProcessID i = 0; i < MAX_NUMBER_OF_PROCESSES; i++) {
-        processes[i] = *os_getProcessSlot(i);
-    }
-
-    // Request next processId without changing anything
-    // Current process is always 1
-    switch (os_getSchedulingStrategy()) {
-        case OS_SS_EVEN:
-            nextId = os_Scheduler_Even(processes, os_getCurrentProc());
-            break;
-        case OS_SS_RANDOM:
-            nextId = os_Scheduler_Random(processes, os_getCurrentProc());
-            break;
-        case OS_SS_ROUND_ROBIN:
-            nextId = os_Scheduler_RoundRobin(processes, os_getCurrentProc());
-            break;
-        case OS_SS_INACTIVE_AGING:
-            nextId = os_Scheduler_InactiveAging(processes, os_getCurrentProc());
-            break;
-        case OS_SS_RUN_TO_COMPLETION:
-            nextId = os_Scheduler_RunToCompletion(processes, os_getCurrentProc());
-            break;
-        default:
-            lcd_clear();
-            lcd_writeProgString(PSTR("Invalid strategy"));
-            while (1) {}
-    }
-
-    os_resetSchedulingInformation(os_getSchedulingStrategy());
-
-    if (nextId == 0) {
-        return 0;
-    } else {
-        return 1;
-    }
-}
-
-/*!
- *  Function that sets the current strategy to the given one
- *  and outputs the name of the strategy on the LCD.
- */
-void setActiveStrategy(SchedulingStrategy strategy) {
-    switch (strategy) {
-        case OS_SS_EVEN:
-            lcd_writeProgString(PSTR("Even"));
-            break;
-        case OS_SS_RANDOM:
-            lcd_writeProgString(PSTR("Random"));
-            // reset global seed to 1 (default)
-            // this is just in case students called rand() beforehand
-            srand(1);
-            break;
-        case OS_SS_ROUND_ROBIN:
-            lcd_writeProgString(PSTR("RoundRobin"));
-            break;
-        case OS_SS_INACTIVE_AGING:
-            lcd_writeProgString(PSTR("InactiveAging"));
-            break;
-        case OS_SS_RUN_TO_COMPLETION:
-            lcd_writeProgString(PSTR("RunToCompletion"));
-            break;
-        default:
-            break;
-    }
-    os_setSchedulingStrategy(strategy);
-    _delay_ms(LCD_DELAY);
-}
-
-/*!
- *  Function that performs the given strategy for 32 steps
- *  and checks if the processes were scheduled correctly
- */
-void performStrategyTest(SchedulingStrategy strategy) {
-    lcd_clear();
-
-    // Change scheduling strategy
-    setActiveStrategy(strategy);
-
-    // Test if first step is 0
-    if (!strategyImplemented()) {
-        lcd_clear();
-        lcd_writeProgString(PSTR("Not impl. or idle returned"));
-        _delay_ms(LCD_DELAY);
-        return;
-    }
-
-    // Perform scheduling test.
-    // Save the id of the running process and call the scheduler.
-    i = 0;
-    while (i < 32) {
-        capture[i++] = 1;
-        TIMER2_COMPA_vect();
-    }
-
-    // Print captured schedule
-    lcd_clear();
-    for (i = 0; i < 32; i++) {
-        lcd_writeDec(capture[i]);
-    }
-
-    // Check captured schedule
-    for (i = 0; i < 32; i++) {
-        if (capture[i] != pgm_read_byte(&scheduling[strategy][i])) {
-            // Move cursor
-            lcd_goto((i / 16) + 1, (i % 16) + 1);
-            // Show cursor without underlining the position
-            lcd_command((LCD_SHOW_CURSOR & ~(1 << 1)) | LCD_DISPLAY_ON);
-            while (1) {}
-        }
-    }
-
-    _delay_ms(LCD_DELAY);
-    lcd_clear();
-    lcd_writeProgString(PSTR("OK"));
-
-    _delay_ms(LCD_DELAY);
-}
-
-/*!
- *  Function that performs the given strategy and checks
- *  if all processes could be scheduled
- */
-void performSchedulabilityTest(SchedulingStrategy strategy, uint8_t expectation) {
-    if (strategy == OS_SS_RUN_TO_COMPLETION) {
-        // Ignore RunToCompletion as the programs never terminate
-        return;
-    }
-
-    lcd_clear();
-
-    // Change scheduling strategy
-    setActiveStrategy(strategy);
-
-    // Test if first step is 0
-    if (!strategyImplemented()) {
-        lcd_clear();
-        lcd_writeProgString(PSTR("Not impl. or idle returned"));
-        _delay_ms(LCD_DELAY);
-        return;
-    }
-
-    uint8_t captured = 0;
-
-    // Perform strategy 32 times
-    i = 0;
-    while (i < 32) {
-        capture[i++] = 1;
-        TIMER2_COMPA_vect();
-    }
-
-    // Calculate which processes were scheduled
-    for (uint8_t k = 0; k < 32; k++) {
-        captured |= (1 << capture[k]);
-    }
-
-    // Check if all processes other than the idle process
-    // were scheduled
-    if (captured == expectation) {
-        lcd_clear();
-        lcd_writeProgString(PSTR("OK"));
-        _delay_ms(LCD_DELAY);
-
-        // Everything fine, so we can stop the test here
-        return;
-    }
-
-    // Find processes that were not scheduled (but should be)
-    uint8_t notScheduled = ~captured & expectation;
-
-    // Find processes that were scheduled (but should not be)
-    uint8_t wrongScheduled = captured & ~expectation;
-
-	// Output the error to the user
-	lcd_clear();
-	switch (strategy) {
-		case OS_SS_EVEN:
-		lcd_writeProgString(PSTR("Even: "));
-		break;
-
-		case OS_SS_RANDOM:
-		lcd_writeProgString(PSTR("Random: "));
-		break;
-
-		case OS_SS_ROUND_ROBIN:
-		lcd_writeProgString(PSTR("RoundRobin: "));
-		break;
-
-		case OS_SS_INACTIVE_AGING:
-		lcd_writeProgString(PSTR("InactiveAg.: "));
-		break;
-
-		case OS_SS_RUN_TO_COMPLETION:
-		lcd_writeProgString(PSTR("RunToCompl.: "));
-		break;
-	}
-	lcd_goto(1, 14);
-
-    // Find the first incorrect process id
-    for (ProcessID k = 0; k < MAX_NUMBER_OF_PROCESSES; k++) {
-        if (notScheduled & (1 << k)) {
-            lcd_writeDec(k);
-            lcd_line2();
-            lcd_writeProgString(PSTR("not schedulable"));
-            break;
-        }
-		if (wrongScheduled & (1 << k)) {
-			lcd_writeDec(k);
-			lcd_line2();
-			lcd_writeProgString(PSTR("falsely sched."));
-			break;
-		}
-    }
-
-    // Wait forever
-    while (1) {}
-}
-
-/*!
- *  Function that tests the given strategy on an artificial empty process array
- *  This ensures the strategy does schedule the idle process if necessary.
- */
-void performScheduleIdleTest(SchedulingStrategy strategy) {
-
-    lcd_clear();
-
-    // Change scheduling strategy
-    setActiveStrategy(strategy);
-
-    // Test if first step is 0
-    if (!strategyImplemented()) {
-        lcd_clear();
-        lcd_writeProgString(PSTR("Not impl. or idle returned"));
-        _delay_ms(LCD_DELAY);
-        return;
-    }
-
-    // Setup artificial processes array
-    Process processes[MAX_NUMBER_OF_PROCESSES];
-
-    // Ensure clean states
-    for(ProcessID i = 0; i < MAX_NUMBER_OF_PROCESSES; i++)
-        processes[i].state = OS_PS_UNUSED;
-
-    ProcessID result=0;
-    for(ProcessID i = 0; i < MAX_NUMBER_OF_PROCESSES && result == 0; i++){
-
-        switch(strategy) {
-            case OS_SS_EVEN:
-                result = os_Scheduler_Even(processes, i);
-                break;
-            case OS_SS_RANDOM:
-                result = os_Scheduler_Random(processes, i);
-                break;
-            case OS_SS_ROUND_ROBIN:
-                result = os_Scheduler_RoundRobin(processes, i);
-                break;
-            case OS_SS_INACTIVE_AGING:
-                result = os_Scheduler_InactiveAging(processes, i);
-                break;
-            case OS_SS_RUN_TO_COMPLETION:
-                result = os_Scheduler_RunToCompletion(processes, i);
-                break;
-        }
-
-    }
-
-    if(result == 0){
-		lcd_goto(2,0);
-		lcd_writeProgString(PSTR("OK"));
-		_delay_ms(LCD_DELAY*0.5);
-
-        return;
-	}
-
-    // Output the error to the user
-    lcd_clear();
-	switch (strategy) {
-        case OS_SS_EVEN:
-            lcd_writeProgString(PSTR("Even: "));
-            break;
-
-        case OS_SS_RANDOM:
-            lcd_writeProgString(PSTR("Random: "));
-            break;
-
-        case OS_SS_ROUND_ROBIN:
-            lcd_writeProgString(PSTR("RoundRobin: "));
-            break;
-
-        case OS_SS_INACTIVE_AGING:
-            lcd_writeProgString(PSTR("Inac.Ag.: "));
-            break;
-
-        case OS_SS_RUN_TO_COMPLETION:
-            lcd_writeProgString(PSTR("RunToCompl.: "));
-            break;
-    }
-    lcd_writeProgString(PSTR("Idle not scheduled"));
-
-    // Wait forever
-    while (1) {}
-}
+//! Checks if all bytes in a certain memory-area are the same.
+uint8_t tt_isAreaUniform(MemAddr start, uint16_t size, MemValue byte);
+//! Prints an error message on the LCD. Then halts.
+void tt_throwError(char const* str);
+//! Prints phase information to the LCD.
+void tt_showPhase(uint8_t i, char const* name);
+//! Prints OK for the phase message.
+void tt_phaseSuccess(void);
+//! Prints FAIL for the phase message.
+void tt_phaseFail(void);
 
 
-/*!
- * Program that deactivates the scheduler, spawns two programs
- * and performs the test
- */
 PROGRAM(1, AUTOSTART) {
-    // Disable scheduler-timer
-    cbi(TCCR2B, CS22);
-    cbi(TCCR2B, CS21);
-    cbi(TCCR2B, CS20);
+    // If there are any problems, we set a certain bit in the bitmask
+    // "errorCode", indicating what exactly went wrong.
+    uint8_t errorCode = 0;
 
-    os_getProcessSlot(os_getCurrentProc())->priority = 2;
+// Phase 1: Some sanity checks
+#if FREEMAP_PHASE_1 == 1
+    tt_showPhase(1, PSTR("Sanity check"));
+    delayMs(LCD_DELAY);
 
-    os_exec(2, 5);
-    os_exec(3, 17);
 
-    SchedulingStrategy strategies[] = {
-        OS_SS_EVEN,
-        OS_SS_RANDOM,
-        OS_SS_ROUND_ROBIN,
-        OS_SS_INACTIVE_AGING,
-        OS_SS_RUN_TO_COMPLETION
-    };
+    // Check if the driver returned by lookupHeap is the correct one.
+    // If not, set bit 0
+    errorCode |= (os_lookupHeap(0) != DRIVER) << 0;
+    // Check if the mapsize of the heap is correct.
+    // If not, set bit 1
+    errorCode |= (os_getMapSize(DRIVER) < MAPSIZE) << 1;
+    // Check if the length of the heaplist is correct.
+    // If not, set bit 2
+    errorCode |= (os_getHeapListLength() != 1) << 2;
+    // Check if use- and map-area have a size relationship of 2:1.
+    // If not, set bit 3
+    errorCode |= (os_getMapSize(DRIVER) != os_getUseSize(DRIVER) - os_getMapSize(DRIVER)) << 3; 
 
-    uint8_t k = 0;
-    uint8_t numStrategies = sizeof(strategies) / sizeof(SchedulingStrategy);
-
-#if PHASE_1 == 1
-
-    lcd_clear();
-    lcd_writeProgString(PSTR("Phase 1:\nStrategies"));
-    _delay_ms(LCD_DELAY);
-
-    // Start strategies test
-    for (k = 0; k < numStrategies; k++) {
-        performStrategyTest(strategies[k]);
-    }
-
-#endif
-#if PHASE_2 == 1
-
-    lcd_clear();
-    lcd_writeProgString(PSTR("Phase 2:\nIdle"));
-    _delay_ms(LCD_DELAY);
-
-    // Start strategies test
-    for (k = 0; k < numStrategies; k++) {
-        performScheduleIdleTest(strategies[k]);
-    }
-
-#endif
-
-	// Execute programs so all process slots are in use
-    os_exec(4, DEFAULT_PRIORITY);
-    os_exec(5, DEFAULT_PRIORITY);
-    os_exec(6, DEFAULT_PRIORITY);
-    os_exec(7, DEFAULT_PRIORITY);
-
-#if PHASE_3 == 1
-
-    lcd_clear();
-    lcd_writeProgString(PSTR("Phase 3: Schedulability All"));
-    _delay_ms(LCD_DELAY);
-
-    // Start schedulability test
-    for (k = 0; k < numStrategies; k++) {
-        performSchedulabilityTest(strategies[k], 0b11111110);
-    }
-
-#endif
-#if PHASE_4 == 1
-
-    lcd_clear();
-    lcd_writeProgString(PSTR("Phase 4: Schedulability Partial"));
-    _delay_ms(LCD_DELAY);
-
-    // Reset some processes
-    os_getProcessSlot(3)->state = OS_PS_UNUSED;
-    os_getProcessSlot(4)->state = OS_PS_UNUSED;
-    os_getProcessSlot(7)->state = OS_PS_UNUSED;
-
-    // Start schedulability test
-    for (k = 0; k < numStrategies; k++) {
-        performSchedulabilityTest(strategies[k], 0b01100110);
-    }
-
-#endif
-
-    // All tests passed
-    while (1) {
+    // Output of test-results, if there was an error
+    if (errorCode) {
+        tt_phaseFail();
+        delayMs(LCD_DELAY);
         lcd_clear();
-        lcd_writeProgString(PSTR("  TEST PASSED   "));
-        _delay_ms(0.5 * LCD_DELAY);
-        lcd_clear();
-        _delay_ms(0.5 * LCD_DELAY);
+        lcd_writeProgString(PSTR("DRV|MAP|LST|1:2|"));
+        uint8_t errorIndex;
+        for (errorIndex = 0; errorIndex < 4; errorIndex++) {
+            if (errorCode & (1 << errorIndex)) {
+                lcd_writeProgString(PSTR("ERR|"));
+            } else {
+                lcd_writeProgString(PSTR("OK |"));
+            }
+        }
+        HALT;
     }
+
+    tt_phaseSuccess();
+    delayMs(LCD_DELAY);
+    lcd_clear();
+#endif
+
+// Phase 2: Malloc
+#if FREEMAP_PHASE_2 == 1
+    tt_showPhase(2, PSTR("malloc"));
+    delayMs(LCD_DELAY);
+
+    // We use error-codes again
+    errorCode = 0;
+
+    // We allocate the whole use-area with os_malloc
+    MemAddr hugeChunk = os_malloc(DRIVER, os_getUseSize(DRIVER));
+    if (hugeChunk == 0) {
+        // We could not allocate the whole use-area
+        errorCode |= 1 << 0;
+    } else {
+        // Allocation was successful, but what does the map look like?
+        uint8_t mapEntry = (os_getCurrentProc() << 4) | 0x0F;
+        if (DRIVER->driver->read(os_getMapStart(DRIVER)) != mapEntry) {
+            // The first map-entry is wrong
+            errorCode |= 1 << 1;
+        }
+        if (!tt_isAreaUniform(os_getMapStart(DRIVER) + 1, os_getMapSize(DRIVER) - 1, 0xFF)) {
+            // The rest of the map is not filled with 0xFF
+            errorCode |= 1 << 2;
+        }
+
+        // Now we free and check if the map is correct afterwards
+        os_free(DRIVER, hugeChunk);
+        if (!tt_isAreaUniform(os_getMapStart(DRIVER), os_getMapSize(DRIVER), 0x00)) {
+            // there are some bytes in the map that are not 0
+            errorCode |= 1 << 3;
+        }
+    }
+
+    // Output of test-results, if there was an error
+    if (errorCode) {
+        tt_phaseFail();
+        delayMs(LCD_DELAY);
+        lcd_clear();
+        lcd_writeProgString(PSTR("MAL|OWN|FIL|FRE|"));
+        lcd_line2();
+        uint8_t errorIndex;
+        for (errorIndex = 0; errorIndex < 4; errorIndex++) {
+            if (errorCode & (1 << errorIndex)) {
+                lcd_writeProgString(PSTR("ERR|"));
+            } else {
+                lcd_writeProgString(PSTR("OK |"));
+            }
+        }
+        HALT;
+    }
+
+    tt_phaseSuccess();
+    delayMs(LCD_DELAY);
+    lcd_clear();
+#endif
+
+// Phase 3: Free
+#if FREEMAP_PHASE_3 == 1
+    tt_showPhase(3, PSTR("free"));
+    delayMs(LCD_DELAY);
+
+    /*  Calculating the map-address for our hand-allocated block of memory.
+     *  The block will be at the very end of the use-area because we write
+     *  into the very end of the map-area 
+	 */
+    uint16_t addr = os_getUseStart(DRIVER);
+    addr -= SIZE / 2;
+
+    // We build the first two entries of the map-area
+    ProcessID process = os_getCurrentProc();
+    process = (process << 4) | 0xF;
+
+    /* Now we allocate memory by hand. This is done in two steps. First we
+     * write the process-byte which contains the owner and an 0xF, then we
+     * write the remaining 0xF until we allocated the memory we need.
+	 */
+    DRIVER->driver->write(addr, process);
+    uint8_t i;
+    for (i = 1; i < SIZE / 2; i++) {
+        DRIVER->driver->write(addr + i, 0xFF);
+    }
+    // Fill the first half of the block with 0xFF
+    for (i = 0; i < SIZE / 2; i++) {
+        DRIVER->driver->write(addr + (SIZE / 2) + i, 0xFF);
+    }
+
+    // Determine use address by calculating offset of map-entry to mapstart
+    MemAddr  useaddr = ((addr - os_getMapStart(DRIVER)) * 2) + os_getUseStart(DRIVER);
+
+    /* Free map
+     * Expected state: free map + #SIZE/2 byte (0xFF) at the beginning of
+     * use-area. If free is implemented wrongly, it will also zero out the
+     * 0xFF at the beginning of the use-area 
+	 */
+    os_free(DRIVER, useaddr);
+
+    // Just like in phase 1 we use a bitmap to store errors
+    errorCode = 0;
+
+    // Check map data
+    for (i = 0; i < SIZE / 2; i++) {
+        if (DRIVER->driver->read(addr + i)) {
+            // The map was not freed
+            errorCode |= 1 << 0;
+        }
+    }
+
+    // Check map data
+    for (i = SIZE / 2; i < SIZE; i++) {
+        if (!(DRIVER->driver->read(addr + i) == 0xFF)) {
+            // The use area was touched
+            errorCode |= 1 << 1;
+        }
+    }
+
+    // Output of test-results, if there was an error
+    if (errorCode) {
+        tt_phaseFail();
+        delayMs(LCD_DELAY);
+        lcd_clear();
+        lcd_writeProgString(PSTR("MAP|USE|"));
+        lcd_line2();
+        uint8_t errorIndex;
+        for (errorIndex = 0; errorIndex < 2; errorIndex++) {
+            if (errorCode & (1 << errorIndex)) {
+                lcd_writeProgString(PSTR("ERR|"));
+            } else {
+                lcd_writeProgString(PSTR("OK |"));
+            }
+        }
+        HALT;
+    }
+
+
+    tt_phaseSuccess();
+    delayMs(LCD_DELAY);
+    lcd_clear();
+#endif
+
+    // SUCCESS
+	lcd_clear();
+	lcd_writeProgString(PSTR("ALL TESTS PASSED"));
+	lcd_line2();
+	lcd_writeProgString(PSTR(" PLEASE CONFIRM!"));
+	os_waitForInput();
+	os_waitForNoInput();
+	lcd_clear();
+	lcd_writeProgString(PSTR("WAITING FOR"));
+	lcd_line2();
+	lcd_writeProgString(PSTR("TERMINATION"));
+	delayMs(LCD_DELAY);
+
 }
 
 /*!
- *  Writes a given program ID to the capture array
- *  and calls the ISR manually afterwards
- *
- *  \param programID The ID which will be written to the capture array
+ * Checks if all bytes in a certain memory-area are the same.
+ * \param  start First address of area
+ * \param  size  Length of area in bytes
+ * \param  byte  Byte that is supposed to appear in this area
  */
-void testProgram(uint8_t programID) {
-    while (1) {
-        if (i < 32) {
-            capture[i++] = programID;
+uint8_t tt_isAreaUniform(MemAddr start, uint16_t size, MemValue byte) {
+    uint16_t i;
+    for (i = 0; i < size; i++) {
+        if (DRIVER->driver->read(start + i) != byte) {
+            return 0;
         }
-        TIMER2_COMPA_vect();
     }
+    return 1;
 }
 
-PROGRAM(2, DONTSTART) {
-    testProgram(2);
+/*!
+ * Prints an error message on the LCD. Then halts.
+ * \param  *str Message to print
+ */
+void tt_throwError(char const* str) {
+    lcd_clear();
+    lcd_line1();
+    lcd_writeProgString(PSTR("Error:"));
+    lcd_line2();
+    lcd_writeProgString(str);
+    HALT;
 }
 
-PROGRAM(3, DONTSTART) {
-    testProgram(3);
+/*!
+ * Prints phase information to the LCD.
+ * \param  i    Index of phase
+ * \param *name Name of phase
+ */
+void tt_showPhase(uint8_t i, char const* name) {
+    lcd_clear();
+    lcd_writeProgString(PSTR("Phase "));
+    lcd_writeDec(i);
+    lcd_writeChar(':');
+    lcd_line2();
+    lcd_writeProgString(name);
 }
 
-PROGRAM(4, DONTSTART) {
-    testProgram(4);
+/*!
+ * Prints OK for the phase message.
+ */
+void tt_phaseSuccess(void) {
+    lcd_goto(2, 15);
+    lcd_writeProgString(PSTR("OK"));
 }
 
-PROGRAM(5, DONTSTART) {
-    testProgram(5);
+/*!
+ * Prints FAIL for the phase message.
+ */
+void tt_phaseFail(void) {
+    lcd_goto(2, 13);
+    lcd_writeProgString(PSTR("FAIL"));
 }
 
-PROGRAM(6, DONTSTART) {
-    testProgram(6);
-}
-
-PROGRAM(7, DONTSTART) {
-    testProgram(7);
-}

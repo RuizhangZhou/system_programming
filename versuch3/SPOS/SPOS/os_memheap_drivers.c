@@ -13,10 +13,10 @@
 #include <avr/pgmspace.h>
 
 //! defines for e.g. start address and size of map/use-section of the heap
-#define MAP_SECTION_SIZE ((HEAPTOP - HEAPBOTTOM) / 3);
-#define USE_SECTIOM_SIZE (MAPSECTION * 2)
-#define MAP_SECTION_START HEAPBOTTOM;
-#define USE_SECTION_START (HEAPBOTTOM + MAP_SECTION_SIZE);
+#define MAP_SECTION_SIZE ((HEAPTOP - HEAPBOTTOM) / 3)
+#define USE_SECTION_SIZE (MAP_SECTION_SIZE * 2)
+#define MAP_SECTION_START HEAPBOTTOM
+#define USE_SECTION_START (HEAPBOTTOM + MAP_SECTION_SIZE)
 
 
 //! external constant used for determining heap start
@@ -30,7 +30,7 @@ Heap intHeap__ = {
     .mapSectionStart = MAP_SECTION_START,
     .mapSectionSize = MAP_SECTION_SIZE,
     .useSectionStart = USE_SECTION_START,
-    .useSectionSize = USE_SECTIOM_SIZE,
+    .useSectionSize = USE_SECTION_SIZE,
     .actAllocStrategy = OS_MEM_FIRST,
     .name = intStr,
     .procVisitArea = { 0 },
@@ -39,10 +39,7 @@ Heap intHeap__ = {
 //! function that sets HEAPBOTTOM to address of __heap_start if not less than that address
 void checkIntHeapStart() {
     if ((uint16_t) &__heap_start >= HEAPBOTTOM) {
-        // TODO: Other method that does not terminate program but prints something
-        lcd_clear();
-        lcd_writeProgString(PSTR("Resetting Heap  Start..."));
-		HEAPBOTTOM = (uint16_t) &__heap_start;
+        os_error("! global  vars !!  crash heap  !");
     }
 }
 
@@ -63,10 +60,11 @@ size_t os_getHeapListLength(void) {
 }
 
 //! function to get a pointer to heap associated with 'index'
-Heap* os_lookupHeap(uint_t index) {
+Heap* os_lookupHeap(uint8_t index) {
     if (index == 0) {
         return intHeap;
     }
+	return NULL;
 }
 
 

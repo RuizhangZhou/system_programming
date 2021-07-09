@@ -33,5 +33,5 @@ MemDriver intSRAM__ = {
     .read = readSRAM,
     .write = writeSRAM,
     .start = AVR_SRAM_START,
-    .size = AVR_MEMORY_SRAM
-}
+    .size = AVR_MEMORY_SRAM,
+};

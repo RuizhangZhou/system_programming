@@ -40,7 +40,7 @@ void os_freeOwnerRestricted(Heap *heap, MemAddr addr, ProcessID owner);
  *  \param addr The address that points to some byte of the chunk.
  *  \return The PID of the Process associated with the chunk.
  */
-ProcessID getOwnerOfChunk(Heap *heap, MemAddr addr);
+ProcessID getOwnerOfChunk(Heap const* heap, MemAddr addr);
 
 /*!
  *  This function is used to determine where a chunk starts
@@ -100,7 +100,7 @@ void setHighNibble(Heap const* heap, MemAddr addr, MemValue value);
 void setLowNibble(Heap const* heap, MemAddr addr, MemValue value);
 
 //! Asserts that given address is in use-section; error otherwise
-void assertAddrInUseArea(Heap const* heap, MemAddr addr);
+void assertAddrInUseSection(Heap const* heap, MemAddr addr);
 
 //! Returns Address of map entry for given use section address
 MemAddr getMapAddrForUseAddr(Heap const* heap, MemAddr addr);
