@@ -11,6 +11,10 @@
 #define CMD_WRITE 2
 
 
+#define EXT_SRAM_START (0x0)
+#define EXT_MEMORY_SRAM 0xffff//64KiB?
+#define DEFAULT_ALLOCATION_STRATEGY OS_MEM_FIRST
+
 //! define type MemAddr to store 16 bits memory addresses
 typedef uint16_t MemAddr;
 
@@ -22,6 +26,8 @@ typedef struct {
     void (*init)(void);
     MemValue (*read)(MemAddr addr);
     void (*write)(MemAddr addr, MemValue value);
+	uint16_t size;
+	MemAddr start;
 }MemDriver;
 
 //! initialises heap and calls os_init() to initialise allocation table

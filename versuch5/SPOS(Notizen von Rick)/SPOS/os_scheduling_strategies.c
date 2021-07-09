@@ -41,7 +41,10 @@ void os_resetSchedulingInformation(SchedulingStrategy strategy) {
  */
 void os_resetProcessSchedulingInformation(ProcessID id) {
     // This is a presence task
-	schedulingInfo.age[id]=0;
+	schedulingInfo.age[id] = 0;
+	if (id == 0) {
+		return;
+	}
 
 	if(os_getSchedulingStrategy()==OS_SS_MULTI_LEVEL_FEEDBACK_QUEUE){
 		MLFQ_removePID(id);
@@ -192,7 +195,7 @@ ProcessID os_Scheduler_InactiveAging(Process const processes[], ProcessID curren
  */
 ProcessID os_Scheduler_RunToCompletion(Process const processes[], ProcessID current) {
     // This is a presence task
-	if(os_isRunnable(&processes[current]) && current!=0){
+	if(os_isRunnable(&processes[current]) ){
 		return current;
 	}else{
 		return os_Scheduler_Even(processes,current);

@@ -21,15 +21,20 @@ uint8_t os_spi_send (uint8_t data){
     SPDR=data;
     while(!(SPSR>>SPIF)){/* activ gewartet if bit(SPIF)=0 */}
     //while(!(SPSR & (1<<SPIF))){ /* Wait for serial finish */ }//alternative implement
-    os_leaveCriticalSection();
-    return SPDR;
+    uint8_t res = SPDR;
+	os_leaveCriticalSection();
+    return res;
 }
 
 uint8_t os_spi_receive (){
+	/*
     os_enterCriticalSection();
     SPDR=DUMMY;
-    while(!(SPSR>>SPIF)){/* activ gewartet if SPIF=0 */}
+    while(!(SPSR>>SPIF)){}//activ gewartet if SPIF=0 
     uint8_t res = SPDR;//fit to return type uint8_t
     os_leaveCriticalSection();
     return res;//when receive always send the DUMMY-Byte
+	*/
+	return os_spi_send(DUMMY);
+	
 }

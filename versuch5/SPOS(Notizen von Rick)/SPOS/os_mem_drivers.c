@@ -8,8 +8,11 @@
 #include <avr/interrupt.h>
 #include <stdint.h>
 #include "os_core.h"//os_error()
-
-
+/*
+#define EXT_SRAM_START (0x0)
+#define EXT_MEMORY_SRAM 0xffff//64KiB?
+#define DEFAULT_ALLOCATION_STRATEGY OS_MEM_FIRST
+*/
 
 //Pseudo-function to initialise the internal SRAM Actually, there is nothing to be done when initialising the internal SRAM, but we create this function, because MemDriver expects one for every memory device.
 void initSRAM_internal(void){
@@ -39,6 +42,8 @@ MemDriver intSRAM__={
 	.init=initSRAM_internal,
 	.read=readSRAM_internal,
 	.write=writeSRAM_internal,
+	.size=AVR_MEMORY_SRAM,
+	.start=AVR_SRAM_START,
 };
 
 
@@ -74,8 +79,9 @@ void transfer_address (MemAddr addr){
 
 void initSRAM_external (){
 	os_enterCriticalSection();
-	select_memory();
 	os_spi_init();
+	select_memory();
+	
 	set_operation_mode(CMD_WRMR);
 	deselect_memory();
 	os_leaveCriticalSection();
@@ -97,6 +103,7 @@ void writeSRAM_external (MemAddr addr, MemValue value){
 	select_memory();
 	set_operation_mode(CMD_WRITE);
 	transfer_address(addr);
+	os_spi_send(value);
 	deselect_memory();
 	os_leaveCriticalSection();
 }
@@ -105,6 +112,8 @@ MemDriver extSRAM__={
 	.init=initSRAM_external,
 	.read=readSRAM_external,
 	.write=writeSRAM_external,
+	.size=EXT_MEMORY_SRAM,
+	.start=EXT_SRAM_START,
 };
 
 void initMemoryDevices(){
