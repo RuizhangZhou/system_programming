@@ -42,7 +42,7 @@ MemAddr os_getUseStart(Heap const* heap);
 
 uint16_t os_getChunkSize(Heap const* heap, MemAddr addr);
 MemAddr os_getFirstByteOfChunk(Heap const* heap, MemAddr addr);
-ProcessID getOwnerOfChunk(Heap* heap, MemAddr addr);
+ProcessID getOwnerOfChunk(Heap const* heap, MemAddr addr);
 
 AllocStrategy os_getAllocationStrategy(Heap const* heap);
 void os_setAllocationStrategy(Heap *heap, AllocStrategy allocStrat);

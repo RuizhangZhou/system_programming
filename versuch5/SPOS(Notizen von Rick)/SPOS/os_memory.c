@@ -76,7 +76,7 @@ MemAddr os_getFirstByteOfChunk(Heap const* heap, MemAddr addr){
     return addr;
 }
 
-ProcessID getOwnerOfChunk(Heap* heap, MemAddr addr){
+ProcessID getOwnerOfChunk(Heap const* heap, MemAddr addr){
 	return getMapEntry(heap,os_getFirstByteOfChunk(heap,addr));
 }
 
@@ -216,25 +216,17 @@ void os_sh_free(Heap *heap, MemAddr *addr){
 MemAddr os_sh_readOpen(Heap const *heap, MemAddr const *ptr){
     os_enterCriticalSection();
     
-    MemAddr firstByteOfChunk=os_getFirstByteOfChunk(heap,*ptr);
-    ProcessID status=getMapEntry(heap, firstByteOfChunk);
-    if (status < SH_MEM_CLOSED){ 
+    if (getOwnerOfChunk(heap,*ptr) < SH_MEM_CLOSED){ 
 		os_error("This is not SM!");
 		os_leaveCriticalSection();
 		return *ptr;
 	}
-	/*
-	else if (status==SH_READ_FIVE){
-        os_error("Read Process reach MAX");
-		os_leaveCriticalSection();
-		return *ptr;
-    }
-	*/
-    while(status==SH_WRITE || status>=SH_READ_FIVE){
+    while(getOwnerOfChunk(heap,*ptr)==SH_WRITE || getOwnerOfChunk(heap,*ptr)>=SH_READ_FIVE){
         os_yield();//how can the yield() change the Status in MapArea?
-		status=getMapEntry(heap,firstByteOfChunk);
     }
-    if(status==SH_MEM_CLOSED){
+	MemAddr firstByteOfChunk=os_getFirstByteOfChunk(heap,*ptr);
+	ProcessID status=getMapEntry(heap, firstByteOfChunk);
+    if(getOwnerOfChunk(heap,*ptr)==SH_MEM_CLOSED){
         setMapEntry(heap,firstByteOfChunk,SH_READ_ONE);
     }else{
         setMapEntry(heap,firstByteOfChunk,status+1);
@@ -247,15 +239,16 @@ MemAddr os_sh_readOpen(Heap const *heap, MemAddr const *ptr){
 MemAddr os_sh_writeOpen(Heap const *heap, MemAddr const *ptr){
     os_enterCriticalSection();
     
-    MemAddr firstByteOfChunk=os_getFirstByteOfChunk(heap,*ptr);
-    if (getMapEntry(heap, firstByteOfChunk) < SH_MEM_CLOSED){ 
+    
+    if (getOwnerOfChunk(heap,*ptr) < SH_MEM_CLOSED){ 
 		os_error("This is not SM!");
 		os_leaveCriticalSection();
 		return *ptr;
 	}
-    while(getMapEntry(heap,firstByteOfChunk)!=SH_MEM_CLOSED){
+    while(getOwnerOfChunk(heap,*ptr)!=SH_MEM_CLOSED){
         os_yield();
     }
+	MemAddr firstByteOfChunk=os_getFirstByteOfChunk(heap,*ptr);
     setMapEntry(heap,firstByteOfChunk,SH_WRITE);
     MemAddr resAddr=*ptr;
     os_leaveCriticalSection();
@@ -277,29 +270,31 @@ void os_sh_close(Heap const *heap, MemAddr addr){
 }
 
 void os_sh_write(Heap const *heap, MemAddr const *ptr, uint16_t offset, MemValue const *dataSrc, uint16_t length){
-    MemAddr firstByteOfChunk=os_getFirstByteOfChunk(heap,*ptr);
-    if(offset+length>os_getChunkSize(heap,firstByteOfChunk)){
-        os_error("write out of this SM");
-		return;
+    MemAddr temp =  os_sh_writeOpen(heap,ptr);
+    if(temp+offset+length > heap->useStart+heap->useSize){
+	    os_error("write out of this HEAP");
+	    }else if(offset+length > os_getChunkSize(heap,temp) ){
+	    os_error("write out of this SM");
+	    }else{
+	    for (MemAddr i = 0; i < length; ++i) {
+		    heap->driver->write(temp + offset + i, *(dataSrc + i));
+	    }
     }
-    os_sh_writeOpen(heap, &firstByteOfChunk);
-    for (MemAddr i = 0; i < length; ++i) {
-		heap->driver->write(firstByteOfChunk + offset + i, *(dataSrc + i));
-	}
-    os_sh_close(heap,firstByteOfChunk);
+    os_sh_close(heap, temp);
 }
 
 void os_sh_read(Heap const *heap, MemAddr const *ptr, uint16_t offset, MemValue *dataDest, uint16_t length){
-    MemAddr firstByteOfChunk=os_getFirstByteOfChunk(heap,*ptr);
-    if(offset+length>os_getChunkSize(heap,firstByteOfChunk)){
-        os_error("Read out of this SM");
-		return;
+    MemAddr temp =  os_sh_readOpen(heap,ptr);
+    if(temp+offset+length > heap->useStart+heap->useSize){
+	    os_error("Read out of this HEAP");
+	    }else if(offset+length > os_getChunkSize(heap,temp) ){
+	    os_error("Read out of this SM");
+	    }else{
+	    for (MemAddr i = 0; i < length; ++i) {
+		    *(dataDest + i) = heap->driver->read(temp + offset + i);
+	    }
     }
-    os_sh_readOpen(heap,&firstByteOfChunk);
-    for (MemAddr i = 0; i < length; ++i) {
-		*(dataDest + i) = heap->driver->read(firstByteOfChunk + offset + i);   
-    }
-    os_sh_close(heap, firstByteOfChunk);
+    os_sh_close(heap, temp);
 }
 
 
