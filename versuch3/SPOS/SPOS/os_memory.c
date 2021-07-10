@@ -9,7 +9,7 @@
  *  \version  1.0
  */
 
-#include "memory.h"
+#include "os_memory.h"
 #include "os_memory_strategies.h"
 #include "util.h"
 #include "os_core.h"
@@ -34,12 +34,12 @@
 void os_freeOwnerRestricted(Heap *heap, MemAddr addr, ProcessID owner) {
     os_enterCriticalSection();
 
-    ProcessID chunkOwner = getOwnerOfChunk(heap, addr);
+    uint8_t chunkOwner = getOwnerOfChunk(heap, addr);
     if (chunkOwner == 0x0) {
-        os_errorPStr("mem.c: ass err  wrong owner")
+        os_errorPStr("mem.c: ass err  wrong owner");
     }
     else if (chunkOwner != owner) {
-        os_errorPStr("u shall not freewhat is not your")
+        os_errorPStr("u shall not freewhat is not your");
     }
 
     addr = os_getFirstByteOfChunk(heap, addr);
@@ -55,7 +55,7 @@ void os_freeOwnerRestricted(Heap *heap, MemAddr addr, ProcessID owner) {
 }
 
 /*!
- *  Fuction determines PID of Process that owns the given memory chunk.
+ *  Function determines PID of Process that owns the given memory chunk.
  *
  *  \param heap The heap the chunk is on hand in.
  *  \param addr The address that points to some byte of the chunk.
@@ -63,11 +63,11 @@ void os_freeOwnerRestricted(Heap *heap, MemAddr addr, ProcessID owner) {
  */
 ProcessID getOwnerOfChunk(Heap const* heap, MemAddr addr) {
     os_enterCriticalSection();
-
+	
     while (os_getMapEntry(heap, addr) == 0xF) {
         addr--;
     }
-    ProcessID owner = os_getMapEntry(heap, addr);
+    uint8_t owner = os_getMapEntry(heap, addr);
 
     os_leaveCriticalSection();
     return owner;
@@ -98,9 +98,9 @@ MemAddr os_getFirstByteOfChunk(Heap const* heap, MemAddr addr) {
  */
 MemValue os_getMapEntry(Heap const* heap, MemAddr addr) {
     os_enterCriticalSection();
-    assertAddressInUseSection(heap, addr);
+    assertAddrInUseSection(heap, addr);
     MemAddr mapAddr = getMapAddrForUseAddr(heap, addr);
-    MemValue nibble;
+    uint8_t nibble;
     // check if high nibble, else low nibble
     if (((mapAddr - heap->mapSectionStart) % 2) == 0) {
         nibble = getHighNibble(heap, mapAddr);
@@ -120,7 +120,7 @@ MemValue os_getMapEntry(Heap const* heap, MemAddr addr) {
  *  \param value The value that is supposed to be set onto the map (valid range: 0x0 - 0xF)
  */
 void setMapEntry(Heap const* heap, MemAddr addr, MemValue value) {
-    assertAddressInUseSection(heap, addr);
+    assertAddrInUseSection(heap, addr);
     MemAddr mapAddr = getMapAddrForUseAddr(heap, addr);
     // check if high nibble, else low nibble
     if (((mapAddr - heap->mapSectionStart) % 2) == 0) {
@@ -179,7 +179,7 @@ void setLowNibble(Heap const* heap, MemAddr addr, MemValue value) {
     value = value % 0x10;
     // get high nibble and shift it to high position
     MemValue highNibble = getHighNibble(heap, addr);
-    highNibble = highNibble << 4
+    highNibble = highNibble << 4;
     // Write existing high nibble into value
     value |= highNibble;
     // Write value to memory at addr
@@ -187,8 +187,8 @@ void setLowNibble(Heap const* heap, MemAddr addr, MemValue value) {
 }
 
 //! Asserts that given address is in use-section; error otherwise
-void assertAddrInUseArea(Heap const* heap, MemAddr addr) {
-	if ((addr < heap->useAreaStart) || (addr >= (heap->useAreaStart + heap->useAreaSize))) {
+void assertAddrInUseSection(Heap const* heap, MemAddr addr) {
+	if ((addr < heap->useSectionStart) || (addr >= (heap->useSectionStart + heap->useSectionSize))) {
 		os_errorPStr("!!  expected  !!!!  use addr  !!");
 	}
 }
@@ -211,12 +211,12 @@ void os_freeProcessMemory (Heap *heap, ProcessID pid) {
 	for (int j = 0; j < 16; j++) {
 		// falls das aktuelle bit gesetzt ist...
 		if (heap->procVisitArea[pid - 1] & (1 << j)) {
-			MemAddr offset = (heap->useAreaSize * j) / 16;
+			MemAddr offset = (heap->useSectionSize * j) / 16;
 			// + 1 als "ceiling" statt "floor", weil sonst durch Rundungsfehler die letzte Adresse des Bereichs übersehen werden könnte.
 			// und der Sonderfall j == 15, da wir dann "nur" useAreaSize und net + 1 haben wollen, da sonst os_getMapEntry "überlaufen" könnte
-			MemAddr upfset = j + 1 != 16 ? (heap->useAreaSize * (j+1)) / 16 + 1 : heap->useAreaSize;
+			MemAddr upfset = j + 1 != 16 ? (heap->useSectionSize * (j+1)) / 16 + 1 : heap->useSectionSize;
 			// dann den bereich durchsuchen um zu free'en
-			for (MemAddr i = heap->useAreaStart + offset; i < (heap->useAreaStart + upfset); i++) {
+			for (MemAddr i = heap->useSectionStart + offset; i < (heap->useSectionStart + upfset); i++) {
 				// wenn eine Zahl auftritt vergleichen mit PID und löschen den Chunk
 				if (os_getMapEntry(heap, i) == pid) {
 					os_freeOwnerRestricted(heap, i, pid);
@@ -250,7 +250,7 @@ MemAddr os_malloc(Heap* heap, uint16_t size) {
     os_enterCriticalSection();
     MemAddr addrFirstByte = 0;
 
-    switch (os_getAllocationStrategy(heap))
+    switch (getAllocationStrategy(heap))
     {
         case OS_MEM_FIRST:
             addrFirstByte = os_Memory_FirstFit(heap, size);
@@ -276,10 +276,10 @@ MemAddr os_malloc(Heap* heap, uint16_t size) {
     setMapEntry(heap, addrFirstByte, os_getCurrentProc());
     size--;
 
-    MemAddr addrFollowByte = addrFirstByte + 1
+    MemAddr addrFollowByte = addrFirstByte + 1;
     // for chunks with size > 1 set map entries for following bytes to 0xF
     while (size-- > 0) {
-        setMapEntry(heap, addrFollowByte++, 0xF)
+        setMapEntry(heap, addrFollowByte++, 0xF);
     }
 
     os_leaveCriticalSection();

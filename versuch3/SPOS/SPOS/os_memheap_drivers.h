@@ -47,6 +47,6 @@ void os_initHeaps(void);
 size_t os_getHeapListLength(void);
 
 //! function to get a pointer to heap associated with 'index'
-Heap* os_lookupHeap(uint_t index);
+Heap* os_lookupHeap(uint8_t index);
 
 #endif
