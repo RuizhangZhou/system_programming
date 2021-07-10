@@ -246,16 +246,16 @@ void lcd_writeChar(char character) {
     if (character != '\n') {
         // Check for non-ASCII characters the LCD knows
         switch (character) {
-            case 'ï¿½':
+            case 'ä':
                 character = 0xE1;
                 break;
-            case 'ï¿½':
+            case 'ö':
                 character = 0xEF;
                 break;
-            case 'ï¿½':
+            case 'ü':
                 character = 0xF5;
                 break;
-            case 'ï¿½':
+            case 'ß':
                 character = 0xE2;
                 break;
             case  8:
@@ -268,13 +268,13 @@ void lcd_writeChar(char character) {
             case '\\':
                 character = LCD_CC_BACKSLASH;
                 break;
-            case 'ï¿½':
+            case 'µ':
                 character = LCD_CC_MU;
                 break;
-            case 'ï¿½':
+            case '°':
                 character = LCD_CC_DEGREE;
                 break;
-            case 'ï¿½':
+            case '´':
                 character = LCD_CC_ACCENT;
                 break;
         }

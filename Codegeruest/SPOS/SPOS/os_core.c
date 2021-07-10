@@ -132,7 +132,7 @@ void os_init(void) {
 
 	os_initHeaps();
 
-    os_coarseSystemTime = 0;
+    os_systemTime_reset();
 }
 
 /*!

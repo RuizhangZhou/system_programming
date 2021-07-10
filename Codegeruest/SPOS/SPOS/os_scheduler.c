@@ -627,6 +627,7 @@ bool os_kill(ProcessID pid) {
  *
  *  Wenn das Programm dann irgendwann mal wieder reingescheduled wird, macht's an der Stelle weiter; stellt den lokalen Zustand wieder her und weiter return't.
  */
+
 void os_yield() {
 
 	os_enterCriticalSection();
@@ -660,3 +661,36 @@ void os_yield() {
 	
 	os_leaveCriticalSection();
 }
+
+/*
+void os_yield(){
+	os_enterCriticalSection();
+	uint8_t oldCriticalSectionCount=criticalSectionCount;
+	
+	// Sichern des MSB aka. GIEB aus dem SREG
+	uint8_t GIEB = SREG & 0b10000000;//GIEB=0bX00000000
+	// Global Interrupt Enable Bit (7. / MSB) im Statusregister (SREG) auf 0 setzen
+	SREG &= 0b01111111;//SREG=0b0XXXXXXXX;
+	if(os_getProcessSlot(currentProc)->state!=OS_PS_UNUSED){
+		os_getProcessSlot(currentProc)->state=OS_PS_BLOCKED;
+	}
+	
+	// Stellen Sie vor dem manuellen Aufruf des Schedulers außerdem sicher,
+	// dass der Scheduler auch weiterhin automatisch durch Timerinterrupts aufgerufen wird.
+	//TIMSK2 |= 0b00000010;
+	// ruft scheduler explizit auf
+
+	criticalSectionCount=1;
+	os_leaveCriticalSection();
+	TIMER2_COMPA_vect();
+	os_enterCriticalSection();
+
+	// re-deaktivieren des Schedulers
+	//TIMSK2 &= 0b11111101;
+	criticalSectionCount=oldCriticalSectionCount;
+	// stellt GIEB wieder her, lässt rest von SREG so wie's is.
+	SREG = (SREG&0b01111111)| GIEB;//SREG=0bYXXXXXXXX; GIEB=0bX00000000 right now
+	
+	os_leaveCriticalSection();
+}
+*/
