@@ -91,7 +91,7 @@
 #define PROCESS_STACK_BOTTOM(PID)   (BOTTOM_OF_PROCS_STACK - ((PID) * STACK_SIZE_PROC))
 
 //! Offset needed before the Heap starts, because global variables are put on the low addresses of the SRAM.
-#define HEAPBOTTOM                  (0x100+400)
+#define HEAPBOTTOM                  0x240
 
 /*!
  *  \brief Obere Ende des Heaps

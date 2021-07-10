@@ -2,7 +2,7 @@
  *  \brief User-gerichtete Speicher-Schnittstelle.
  *
  *  "Obere Schicht" der Speicherverwaltung.
- *  Stellt os_malloc, os_free und Funktionen mit Infos über Speicher.
+ *  Stellt os_malloc, os_free und Funktionen mit Infos ï¿½ber Speicher.
  *
  *  \author   Matthis
  *  \date     2020-11-26
@@ -18,15 +18,15 @@
 #include "os_scheduler.h"
 
 /*!
- *  Versucht, size viele zusammenhängende bytes zu allokieren.
- *  Falls kein passender Platz gefunden, wird 0 zurückgegeben.
+ *  Versucht, size viele zusammenhï¿½ngende bytes zu allokieren.
+ *  Falls kein passender Platz gefunden, wird 0 zurï¿½ckgegeben.
  */
 MemAddr os_malloc(Heap* heap, uint16_t size);
 
 /*!
  *  gibt Speicher frei indem es Nibbles der Allokationstabelle auf "frei" setzt.
  *  Speicher ist privat, kann nur vom Besitzer freigegeben werden.
- *  Versuchte Freigabe fremden Speichers führt zu Fehlermeldung.
+ *  Versuchte Freigabe fremden Speichers fï¿½hrt zu Fehlermeldung.
  *  Adresse kann innerhalb des Bereichs verschoben sein,
  *  es soll trotzdem alles korrekt freigegeben werden
  */
@@ -42,7 +42,7 @@ MemValue os_getMapEntry(Heap const *heap, MemAddr addr);
 
 
 /*! 
- *  liefert Größe des Speicherbereichs in Byte zurück.
+ *  liefert Grï¿½ï¿½e des Speicherbereichs in Byte zurï¿½ck.
  *  Obacht: Adresse muss nicht auf's erste Byte des Bereichs zeigen.
  */
 uint16_t os_getChunkSize(Heap const* heap, MemAddr addr);
@@ -51,10 +51,10 @@ void os_setAllocationStrategy(Heap* heap, AllocStrategy allocStrat);
 
 AllocStrategy os_getAllocationStrategy(Heap const* heap);
 
-//! gibt alles frei, was Prozess `pid`gehört.
+//! gibt alles frei, was Prozess `pid`gehï¿½rt.
 void os_freeProcessMemory (Heap *heap, ProcessID pid);
 
-//! versucht Speicherbereich zu vergrößern/verkleinern oder malloc neu und verschiebt Chunk
+//! versucht Speicherbereich zu vergrï¿½ï¿½ern/verkleinern oder malloc neu und verschiebt Chunk
 MemAddr os_realloc(Heap* heap, MemAddr addr, uint16_t size);
 
 //! alloziert shared memory
@@ -63,10 +63,10 @@ MemAddr os_sh_malloc(Heap* heap, uint16_t size);
 //! gibt shared memory frei
 void os_sh_free(Heap* heap, MemAddr *ptr);
 
-//! öffnet shm, falls grad keiner liest Eigentlich private.
+//! ï¿½ffnet shm, falls grad keiner liest Eigentlich private.
 MemAddr os_sh_readOpen(Heap const* heap, MemAddr const *ptr);
 
-//! öffnet shm, falls grad keiner schreibt. Eigentlich private.
+//! ï¿½ffnet shm, falls grad keiner schreibt. Eigentlich private.
 MemAddr os_sh_writeOpen(Heap const* heap, MemAddr const *ptr);
 
 //! schliest shm. Eigentlich private.

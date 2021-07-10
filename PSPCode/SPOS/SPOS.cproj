@@ -247,9 +247,6 @@
     <Compile Include="os_user_privileges.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="progs.c">
-      <SubType>compile</SubType>
-    </Compile>
     <Compile Include="util.c">
       <SubType>compile</SubType>
     </Compile>

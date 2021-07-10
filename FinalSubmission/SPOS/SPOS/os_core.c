@@ -3,10 +3,8 @@
 #include "util.h"
 #include "lcd.h"
 #include "os_input.h"
-#include "os_memheap_drivers.h"
 
 #include <avr/interrupt.h>
-#include <avr/common.h>
 
 void os_initScheduler(void);
 
@@ -129,8 +127,7 @@ void os_init(void) {
     delayMs(2000);
 
     os_initScheduler();
-
-	os_initHeaps();
+    os_initHeaps();
 
     os_systemTime_reset();
 }
@@ -141,7 +138,7 @@ void os_init(void) {
  *  \param str  The error to be displayed
  */
 void os_errorPStr(char const* str) {
-	// Das 7. Bit (de)aktiviert alle Interrupts. Die Logik ist folgende:
+    // Das 7. Bit (de)aktiviert alle Interrupts. Die Logik ist folgende:
 	// Bit gesetzt -> Interrupts aktiviert
 	
 	//7. Bit (MSB) im Statusregister (SREG) deaktivieren

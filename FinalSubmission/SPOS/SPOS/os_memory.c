@@ -16,14 +16,6 @@
 #include "lcd.h"
 #include "os_input.h"
 
-#define SH_MEM_CLOSED   8 //read and write both possible, which means no Prozess is reading or writing
-#define SH_WRITE        9
-#define SH_READ_ONE     10
-#define SH_READ_TWO     11
-#define SH_READ_THREE   12
-#define SH_READ_FOUR    13
-#define SH_READ_FIVE    14
-
 MemAddr getMapAddrForUseAddr(Heap const *heap, MemAddr addr) {
 	// relative position im use-bereich
 	addr -= heap->useAreaStart;
@@ -468,19 +460,9 @@ MemAddr os_realloc(Heap* heap, MemAddr addr, uint16_t size){
 	return newChunk;
 }
 
-/*
-#define SH_MEM_CLOSED   8 read and write both possible, which means no Prozess is reading or writing
-#define SH_WRITE        9
-#define SH_READ_ONE     10
-#define SH_READ_TWO     11
-#define SH_READ_THREE   12
-#define SH_READ_FOUR    13
-#define SH_READ_FIVE    14
-*/
-
 MemAddr os_sh_readOpen(Heap const* heap, MemAddr const *ptr) {
-	
 	os_enterCriticalSection();
+
 	if (getOwnerOfChunk(heap, *ptr) < 8) {
 		lcd_clear();
 		lcd_writeProgString(PSTR(" os_sh_readOpen on non-shm: err"));

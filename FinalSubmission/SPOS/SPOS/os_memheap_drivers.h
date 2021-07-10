@@ -1,7 +1,7 @@
 /*! \file
  *  \brief Heap.
  *
- *  Verwaltet Heap (Map, User-Area), hält MemDriver
+ *  Verwaltet Heap (Map, User-Area), hï¿½lt MemDriver
  *
  *  \author   Matthis
  *  \date     2020-11-26
@@ -27,7 +27,7 @@ typedef enum AllocStrategy {
 } AllocStrategy;
 
 /*!
- *  Enthält "charakteristische Werte des Speichermediums sowie 
+ *  Enthï¿½lt "charakteristische Werte des Speichermediums sowie 
  *  Funktionszeiger auf init, read und write
  */
 typedef struct Heap {
@@ -43,15 +43,15 @@ typedef struct Heap {
 } Heap;
 
 /*!
- *  alle Nibbles des Map-Bereichs aller vorhandenen Heaptreiber mit 0x00 überschreiben.
+ *  alle Nibbles des Map-Bereichs aller vorhandenen Heaptreiber mit 0x00 ï¿½berschreiben.
  *  Soll an geeigneter Stelle zur Initialisierung aufgerufen werden.
  */
 void os_initHeaps(void);
 
-//! zum Heapindex den passenden Zeiger auf den Heap zurückgeben. intHeap hat Index 0.
+//! zum Heapindex den passenden Zeiger auf den Heap zurï¿½ckgeben. intHeap hat Index 0.
 Heap* os_lookupHeap(uint8_t index);
 
-//! gibt Anzahl an existierenden Heaps zurück.
+//! gibt Anzahl an existierenden Heaps zurï¿½ck.
 size_t os_getHeapListLength(void);
 
 Heap intHeap__;

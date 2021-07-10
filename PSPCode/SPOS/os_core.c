@@ -157,7 +157,7 @@ void os_errorPStr(char const* str) {
 	
 	while( os_getInput() != 0b00001001 ){ /* Weiter warten */ }
 	
-	//"Enter + ESC" wurde gedrückt
+	//"Enter + ESC" wurde gedrï¿½ckt
 	lcd_clear();
 	
 	//7. Bit (MSB) im Statusregister (SREG) aktivieren

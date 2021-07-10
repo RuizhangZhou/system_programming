@@ -1,10 +1,3 @@
-/*! \file
- *  \brief checks if process is runnable.
- *
- *  \author   Fatih
- *  \date     2020
- *  \version  1.0
- */
 #include "os_process.h"
 
 /*!
