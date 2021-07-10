@@ -1,12 +1,3 @@
-/*! \file
- *  \brief Heap.
- *
- *  Verwaltet Heap (Map, User-Area), h�lt MemDriver
- *
- *  \author   Matthis
- *  \date     2020-11-26
- *  \version  1.0
- */
 
 #ifndef _OS_MEMHEAP_DRIVERS_H
 #define _OS_MEMHEAP_DRIVERS_H

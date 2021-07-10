@@ -1,12 +1,4 @@
-/*! \file
- *  \brief Scheduling library for the OS.
- *
- *  Contains the scheduling strategies.
- *
- *  \author   Fatih, Youssef
- *  \date     2020
- *  \version  1.0
- */
+
 #include "os_scheduling_strategies.h"
 #include "defines.h"
 

@@ -1,13 +1,4 @@
-/*! \file
- *  \brief User-gerichtete Speicher-Schnittstelle.
- *
- *  "Obere Schicht" der Speicherverwaltung.
- *  Stellt os_malloc, os_free und Funktionen mit Infos über Speicher.
- *
- *  \author   Matthis
- *  \date     2020-11-26
- *  \version  1.0
- */
+
 #include "os_memory_strategies.h"
 #include "os_memory.h"
 #include "os_process.h"

@@ -1,8 +1,4 @@
-/*! \file
- *  \author   Matthis
- *  \date     2020-11-26
- *  \version  1.0
- */
+
 
 #include "os_memheap_drivers.h"
 #include "defines.h"

@@ -3,6 +3,10 @@
 #include "util.h"
 #include "lcd.h"
 #include "os_input.h"
+#include "os_memheap_drivers.h"
+
+#include <avr/interrupt.h>
+#include <avr/common.h>
 
 #include <avr/interrupt.h>
 
@@ -127,6 +131,7 @@ void os_init(void) {
     delayMs(2000);
 
     os_initScheduler();
+	
     os_initHeaps();
 
     os_systemTime_reset();

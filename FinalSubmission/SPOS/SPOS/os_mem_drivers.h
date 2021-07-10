@@ -1,12 +1,4 @@
-/*! \file
- *  \brief MemoryDriver liest und schreibt Speicher.
- *
- *  Der MemDriver ist die "untere Schicht" des Heap. Er liest und schreibt auf dem konkreten Medium.
- *
- *  \author   Matthis
- *  \date     2020-11-26
- *  \version  1.0
- */
+
 
 #ifndef _OS_MEM_DRIVERS_H
 #define _OS_MEM_DRIVERS_H

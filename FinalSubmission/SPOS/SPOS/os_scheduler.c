@@ -1,12 +1,4 @@
-/*! \file
- *  \brief Scheduling-Modul
- *
- *  Enth�lt zentrale ISR
- *
- *  \author   Fatih
- *  \date     2020
- *  \version  2.0
- */
+
 #include "os_scheduler.h"
 #include "util.h"
 #include "os_input.h"
