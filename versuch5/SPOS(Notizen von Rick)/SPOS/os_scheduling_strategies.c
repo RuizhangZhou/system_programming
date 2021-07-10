@@ -195,7 +195,7 @@ ProcessID os_Scheduler_InactiveAging(Process const processes[], ProcessID curren
  */
 ProcessID os_Scheduler_RunToCompletion(Process const processes[], ProcessID current) {
     // This is a presence task
-	if(processes[current].state == OS_PS_READY ){
+	if(processes[current].state == OS_PS_READY){
 		return current;
 	}else{
 		return os_Scheduler_Even(processes,current);
