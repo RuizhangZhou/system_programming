@@ -1,468 +1,328 @@
 //-------------------------------------------------
-//          TestSuite: Shared Access
+//          TestSuite: Multilevel-Feedback-Queue
 //-------------------------------------------------
 
-#include <avr/interrupt.h>
-
+#include "os_core.h"
 #include "lcd.h"
 #include "util.h"
-#include "os_core.h"
 #include "os_scheduler.h"
 #include "os_memory.h"
+#include "os_scheduling_strategies.h"
 #include "os_input.h"
+#include <avr/interrupt.h>
+#include <util/delay.h>
 
-#define NUM_MAL 5
-#define SIZE 10
+#define MAX_STEPS 64
+#define NUMBER_OF_QUEUES 4
+uint8_t capture[MAX_STEPS];
+uint8_t i = 0;
 
-#if (NUM_MAL * SIZE > 255)
-    #error Reduce SIZE or NUM_MAL
-#endif
-#if (SIZE < 4)
-    #error Chunks must at least be 4 Bytes
-#endif
+ISR(TIMER2_COMPA_vect);
 
-#define DELAY 100
-#define DRIVER intHeap
+// Array containing the correct output values for all four scheduling strategies.
+const uint8_t scheduling[MAX_STEPS] PROGMEM  =  {
+    1, 2, 3, 4, 3, 20, 4, 4, 2, 3, 3, 4, 5, 5, 70, 4, 7, 4, 40, 2, 2, 2, 2, 6, 5, 1, 1, 1, 1, 1, 1, 1,
+    1, 4, 4, 4, 4, 4, 4, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+};
 
-uint8_t errors = 0;
-MemAddr shBlock;
-MemAddr shBlockYield;
-volatile uint8_t state = 0;
-volatile uint8_t mode = 0;
-
-PROGRAM(1, AUTOSTART) {
-    MemAddr allocs[NUM_MAL];
-    volatile int i, j;
-    MemAddr opBlock1, opBlock2;
-
-    // Allocate some shared memory
-    lcd_writeProgString(PSTR("1: Allocating..."));
-    delayMs(10 * DELAY);
-    for (i = 0; i < NUM_MAL; i++) {
-        lcd_clear();
-        lcd_writeDec(i);
-        allocs[i] = os_sh_malloc(DRIVER, 10);
-
-        // Assure that the allocated memory chunks are pairwise distinct
-        bool different = true;
-        for (j = 0; different && j < i; j++) {
-            different = allocs[j] != allocs[i];
-        }
-        lcd_writeChar(' ');
-        if (different) {
-            lcd_writeProgString(PSTR("OK"));
+void printAndCheck(uint8_t page) {
+    // Print captured schedule
+    lcd_clear();
+    for (i = (page * 32); i < (page * 32) + 32; i++) {
+        // Print corresponding alphabetic character if yielded
+        if (capture[i] >= 10) {
+            lcd_writeChar('a' + (capture[i] / 10) - 1);
         } else {
-            errors++;
-            os_error("FAILURE");
+            lcd_writeDec(capture[i]);
         }
-        delayMs(1 * DELAY);
     }
-    lcd_clear();
 
-    // Test if locks can be opened and closed.
-    lcd_writeProgString(PSTR("2a: Accessing (open/close)..."));
-    delayMs(10 * DELAY);
-    for (i = 0; i < NUM_MAL; i++) {
-        lcd_clear();
-        lcd_writeDec(i);
-        lcd_writeChar(' ');
-        for (j = 0; j < SIZE; j++) {
-            MemAddr const p = allocs[i] + j;
-            os_sh_writeOpen(DRIVER, &p);
-            os_sh_close(DRIVER, p);
-            os_sh_readOpen(DRIVER, &p);
-            os_sh_close(DRIVER, p);
+    // Check captured schedule
+    for (i = (page * 32); i < (page * 32) + 32; i++) {
+        if (capture[i] != pgm_read_byte(&scheduling[i])) {
+            // Move cursor
+            lcd_goto((i > 16 + page * 32) + 1, (i % 16) + 1);
+            // Show cursor without underlining the position
+            lcd_command((LCD_SHOW_CURSOR & ~(1 << 1)) | LCD_DISPLAY_ON);
+            while (1) {}
         }
-        lcd_writeProgString(PSTR("OK"));
-        delayMs(1 * DELAY);
-    }
-    lcd_clear();
-
-    // Test if locks can read on private memory
-    lcd_writeProgString(PSTR("2b: Read on private..."));
-    delayMs(10 * DELAY);
-    {
-        MemAddr privBlock = os_malloc(DRIVER, 10);
-        os_sh_readOpen(DRIVER, &privBlock);
-        os_free(DRIVER, privBlock);
-        delayMs(5 * DELAY);
-        lcd_writeProgString(PSTR("OK (if error)"));
-        delayMs(5 * DELAY);
-    }
-    lcd_clear();
-
-    // Test if locks can write on private memory
-    lcd_writeProgString(PSTR("2c: Write on private..."));
-    delayMs(10 * DELAY);
-    {
-        MemAddr privBlock = os_malloc(DRIVER, 10);
-        os_sh_writeOpen(DRIVER, &privBlock);
-        os_free(DRIVER, privBlock);
-        delayMs(5 * DELAY);
-        lcd_writeProgString(PSTR("OK (if error)"));
-        delayMs(5 * DELAY);
-    }
-    lcd_clear();
-
-    // Do some simple write operations
-    lcd_writeProgString(PSTR("3: Accessing (write)..."));
-    delayMs(10 * DELAY);
-    for (i = 0; i < NUM_MAL; i++) {
-        lcd_clear();
-        lcd_writeDec(i);
-        lcd_writeChar(' ');
-        for (j = 0; j < SIZE; j++) {
-            MemValue const a = i * SIZE + j;
-            MemAddr const p = allocs[i];
-            os_sh_write(DRIVER, &p, j, &a, 1);
-        }
-        lcd_writeProgString(PSTR("OK"));
-        delayMs(1 * DELAY);
-    }
-    lcd_clear();
-
-    // Read the written pattern and test if it's still the same
-    lcd_writeProgString(PSTR("4: Accessing (read)..."));
-    delayMs(10 * DELAY);
-    for (i = 0; i < NUM_MAL; i++) {
-        lcd_clear();
-        lcd_writeDec(i);
-        lcd_writeChar(' ');
-        MemValue a;
-        for (j = 0; j < SIZE; j++) {
-            MemAddr const p = allocs[i];
-            a = (MemValue) - 1;
-            os_sh_read(DRIVER, &p, j, &a, 1);
-            if (a != i * SIZE + j) {
-                cli();
-                lcd_clear();
-                lcd_writeDec(i);
-                lcd_writeChar(' ');
-                lcd_writeProgString(PSTR("FAILURE @ "));
-                lcd_writeDec(j);
-                lcd_writeChar('/');
-                lcd_writeDec(SIZE);
-                errors++;
-                // Can't use os_error here since this is no static error message
-                while (os_getInput() != 0b1001);
-                os_waitForNoInput();
-                lcd_clear();
-                sei();
-            }
-        }
-        lcd_writeProgString(PSTR("OK"));
-        delayMs(1 * DELAY);
-    }
-    lcd_clear();
-
-    // Now read past the end of the allocated memory to provoke an error
-    lcd_writeProgString(PSTR("5: Provoking viol. (read)..."));
-    delayMs(10 * DELAY);
-    {
-        lcd_clear();
-        lcd_writeChar('1');
-        lcd_writeChar(' ');
-        MemAddr const p = allocs[1] + 1;
-        uint32_t a;
-        os_sh_read(DRIVER, &p, SIZE - 3, (MemValue*)&a, 4);
-        delayMs(5 * DELAY);
-        lcd_writeProgString(PSTR("OK (if error)"));
-        delayMs(5 * DELAY);
-    }
-    lcd_clear();
-
-    // As above just with writing
-    lcd_writeProgString(PSTR("6: Provoking viol. (write)..."));
-    delayMs(10 * DELAY);
-    {
-        lcd_clear();
-        lcd_writeChar('1');
-        lcd_writeChar(' ');
-        MemAddr const p = allocs[1] + 2;
-        MemValue const a = 0xFF;
-        os_sh_write(DRIVER, &p, SIZE, &a, 1);
-        delayMs(5 * DELAY);
-        lcd_writeProgString(PSTR("OK (if error)"));
-        delayMs(5 * DELAY);
-    }
-    lcd_clear();
-
-    // Now check if the write operation was executed despite the access violation
-    lcd_writeProgString(PSTR("7: Checking..."));
-    delayMs(10 * DELAY);
-    {
-        MemAddr const p = allocs[2];
-        MemValue a = 0xBB;
-        os_sh_read(DRIVER, &p, 0, &a, 1);
-        delayMs(2 * DELAY);
-        if (a == 2 * SIZE + 0) {
+        if (i == (page * 32) + 31) {
+            _delay_ms(2000);
             lcd_clear();
             lcd_writeProgString(PSTR("OK"));
-        } else {
-            errors++;
-            os_error("FAILURE @ Checking");
         }
-        delayMs(10 * DELAY);
     }
-    lcd_clear();
 
-    // Check parallel reading
-    lcd_writeProgString(PSTR("8: Multiple access..."));
-    delayMs(10 * DELAY);
-    {
-        shBlock = os_sh_malloc(DRIVER, 10);
-        if (shBlock == 0) {
-            errors++;
-            os_error("Not enough memory");
-        }
-        shBlockYield = os_sh_malloc(DRIVER, 10);
-        if (shBlockYield == 0) {
-            errors++;
-            os_error("Not enough memory");
-        }
-
-        lcd_clear();
-        lcd_writeProgString(PSTR("readOpen Yield"));
-        delayMs(10 * DELAY);
-        ProcessID readOpenProc = os_exec(3, DEFAULT_PRIORITY);
-        delayMs(10 * DELAY);
-        os_kill(readOpenProc);
-
-        lcd_clear();
-        lcd_writeProgString(PSTR("write/readOpen  Yield"));
-        mode = 0;
-        delayMs(10 * DELAY);
-        ProcessID writeReadOpenProc = os_exec(4, DEFAULT_PRIORITY);
-        delayMs(10 * DELAY);
-        os_kill(writeReadOpenProc);
-
-        lcd_clear();
-        lcd_writeProgString(PSTR("read/writeOpen  Yield"));
-        mode = 1;
-        delayMs(10 * DELAY);
-        ProcessID readWriteOpenProc = os_exec(4, DEFAULT_PRIORITY);
-        delayMs(10 * DELAY);
-        os_kill(readWriteOpenProc);
-
-        // Open the block twice (-> test parallel reading)
-        opBlock1 = os_sh_readOpen(DRIVER, &shBlock);
-        if (opBlock1 != shBlock) {
-            errors++;
-            os_error("Address shouldn't have changed (1)");
-        }
-
-        lcd_clear();
-        lcd_writeProgString(PSTR("1x readOpen"));
-        delayMs(10 * DELAY);
-
-        opBlock2 = os_sh_readOpen(DRIVER, &shBlock);
-        if (opBlock2 != shBlock) {
-            errors++;
-            os_error("Address shouldn't have changed (2)");
-        }
-
-        lcd_clear();
-        lcd_writeProgString(PSTR("2x readOpen"));
-        delayMs(10 * DELAY);
-
-
-        os_sh_close(DRIVER, opBlock2);
-
-        lcd_clear();
-        lcd_writeProgString(PSTR("OK"));
-        delayMs(10 * DELAY);
-    }
-    lcd_clear();
-
-    // Check read/write barriers
-    lcd_writeProgString(PSTR("9: Checking RW barriers..."));
-    delayMs(10 * DELAY);
-    {
-        // Read before write (opBlock1 is still read-open here!):
-        lcd_clear();
-        lcd_writeProgString(PSTR("Read before\nwrite"));
-        delayMs(10 * DELAY);
-
-        // Set behavior of program 2: readOpen
-        mode = 1;
-        os_exec(2, DEFAULT_PRIORITY);
-        // Grant process at least one time slot
-        while (state == 0);
-        delayMs(5 * DELAY);
-        os_kill(2);
-        state = 0;
-        os_sh_close(DRIVER, opBlock1);
-
-        lcd_clear();
-        lcd_writeProgString(PSTR("OK"));
-        delayMs(5 * DELAY);
-
-        // Write before read:
-        lcd_clear();
-        lcd_writeProgString(PSTR("Write before\nread"));
-        delayMs(10 * DELAY);
-
-        opBlock1 = os_sh_writeOpen(DRIVER, &shBlock);
-        if (opBlock1 != shBlock) {
-            errors++;
-            os_error("Address shouldn't have changed (3)");
-        }
-
-        // Set behavior of program 2: writeOpen
-        mode = 2;
-        os_exec(2, DEFAULT_PRIORITY);
-        // Grant process at least one time slot
-        while (state == 0);
-        delayMs(5 * DELAY);
-        os_kill(2);
-        state = 0;
-
-        lcd_clear();
-        lcd_writeProgString(PSTR("OK"));
-        delayMs(5 * DELAY);
-
-        // Write before write:
-        lcd_clear();
-        lcd_writeProgString(PSTR("Write before\nwrite"));
-        delayMs(10 * DELAY);
-
-        // Set behavior of program 2: readOpen
-        mode = 3;
-        os_exec(2, DEFAULT_PRIORITY);
-        // Grant process at least one time slot
-        while (state == 0);
-        delayMs(5 * DELAY);
-        os_kill(2);
-        state = 0;
-        os_sh_close(DRIVER, opBlock1);
-
-        lcd_clear();
-        lcd_writeProgString(PSTR("OK"));
-        delayMs(10 * DELAY);
-    }
-    lcd_clear();
-
-
-    // Check offset
-    lcd_writeProgString(PSTR("10: Checking offset..."));
-    delayMs(10 * DELAY);
-    {
-        MemValue value = 0;
-        MemValue pat[10];
-
-        // Write pattern (opBlock1 is still write-open here!):
-        for (i = 0; i < 10; i++) {
-            MemValue const a = i + 1;
-            os_sh_write(DRIVER, &shBlock, i, &a, 1);
-        }
-
-        // Read pattern without offset
-        // The read pattern should always be the first one
-        for (i = 0; i < 10; i++) {
-            opBlock1 = shBlock + i;
-            os_sh_read(DRIVER, &opBlock1, 0, &value, 1);
-            if (value != 1) {
-                errors++;
-                os_error("Pattern mismatch (1)");
-            }
-        }
-
-        // Read pattern one by one with offset
-        for (i = 0; i < 10; i++) {
-            os_sh_read(DRIVER, &shBlock, i, &value, 1);
-            if (value != i + 1) {
-                errors++;
-                os_error("Pattern mismatch (2)");
-            }
-        }
-
-        // Read pattern all at once without offset
-        os_sh_read(DRIVER, &shBlock, 0, (MemValue*)&pat, 10);
-        for (i = 0; i < 10; i++) {
-            if (pat[i] != i + 1) {
-                errors++;
-                os_error("Pattern mismatch (3)");
-            }
-        }
-
-        // Read pattern-blocks with false and correct offset
-        for (i = 0; i < 10; i++) {
-            opBlock1 = shBlock + i;
-            os_sh_read(DRIVER, &opBlock1, i, (MemValue*)&pat, 10 - i);
-
-            for (j = 0; j < 10 - i; j++)
-                if (pat[j] != i + j + 1) {
-                    errors++;
-                    os_error("Pattern mismatch (4)");
-                }
-        }
-
-        lcd_clear();
-        lcd_writeProgString(PSTR("OK"));
-        delayMs(10 * DELAY);
-    }
-    lcd_clear();
-
-    if (errors) {
-        lcd_writeDec(errors);
-        lcd_writeProgString(PSTR(" errors!"));
-    } else {
-        // SUCCESS
-        lcd_clear();
-        lcd_writeProgString(PSTR("ALL TESTS PASSED"));
-        lcd_line2();
-        lcd_writeProgString(PSTR(" PLEASE CONFIRM!"));
-        os_waitForInput();
-        os_waitForNoInput();
-        lcd_clear();
-        lcd_writeProgString(PSTR("WAITING FOR"));
-        lcd_line2();
-        lcd_writeProgString(PSTR("TERMINATION"));
-        delayMs(1000);
-    }
-    delayMs(10 * DELAY);
+    _delay_ms(2000);
 }
 
-// Used for checking R/W barriers
-PROGRAM(2, DONTSTART) {
-    state = 1;
 
-    if (mode == 1) {
-        os_sh_writeOpen(DRIVER, &shBlock);
-        os_error("FAILURE @ Read before write");
-    } else if (mode == 2) {
-        os_sh_readOpen(DRIVER, &shBlock);
-        os_error("FAILURE @ Write before read");
-    } else if (mode == 3) {
-        os_sh_writeOpen(DRIVER, &shBlock);
-        os_error("FAILURE @ Write before write");
+void performTest() {
+    lcd_writeProgString(PSTR("Testing MLFQ"));
+    os_setSchedulingStrategy(OS_SS_MULTI_LEVEL_FEEDBACK_QUEUE);
+    _delay_ms(2000);
+
+    // Perform scheduling test.
+    // Save the id of the running process and call the scheduler.
+    i = 0;
+    uint8_t runtime = 0;
+    while (i < MAX_STEPS) {
+        runtime++;
+
+        if (runtime == 10) {
+            // Check if process 5 is really program 4
+            if (os_getProcessSlot(4)->progID != 4) {
+                os_error("Program 4 not startet in slot 4.");
+                while (1);
+            }
+            os_kill(4);
+
+
+            // Process with program id 1 is still running, so we should be able to spawn at least 6 more (wrt. idle process)
+            uint8_t procs_num = MAX_NUMBER_OF_PROCESSES - 2;
+            uint8_t procs[procs_num];
+            uint8_t procs_progid = 2;
+
+            // Check if all processes were removed or are going to be (if that's implemented in os_exec)
+            uint8_t pid = INVALID_PROCESS;
+            for (uint8_t i = 0; i < procs_num; i++) {
+                pid = os_exec(procs_progid, DEFAULT_PRIORITY);
+                if (pid == INVALID_PROCESS) {
+                    os_error("Could not exec process");
+                } else {
+                    procs[i] = pid;
+                }
+            }
+
+            // Check program id, number of processes in queues and process state
+			uint8_t count_all = 0;
+			uint8_t count_valid = 0;
+			
+			for(uint8_t i = 0; i < NUMBER_OF_QUEUES; i++){
+				
+				ProcessQueue* queue = MLFQ_getQueue(i);
+				
+				if(!pqueue_hasNext(queue))
+					continue;
+				
+				ProcessID first = pqueue_getFirst(queue);
+
+				
+				do {
+					ProcessID pid = pqueue_getFirst(queue);
+					Process* proc = os_getProcessSlot(pid);
+
+					if ((proc->progID == procs_progid && proc->state == OS_PS_READY) || (proc->progID == os_getCurrentProc()) || (proc->progID == 0)) {
+						count_valid++;
+					}
+
+					count_all++;
+					pqueue_dropFirst(queue);
+					pqueue_append(queue, pid);
+				} while (pqueue_getFirst(queue) != first);
+				
+			}
+
+            if (count_all != count_valid || count_valid < procs_num + 1) {
+                os_error("Queue incorrect");
+            }
+
+            bool killed = false;
+            for (uint8_t i = 0; i < procs_num; i++) {
+                killed = os_kill(procs[i]);
+                if (!killed) {
+                    os_error("Could not kill process");
+                }
+            }
+
+        }
+
+        capture[i++] = 1;
+        TIMER2_COMPA_vect();
     }
-    errors++;
+
+    printAndCheck(0);
+    printAndCheck(1);
+    // SUCCESS
+    lcd_clear();
+    lcd_writeProgString(PSTR("ALL TESTS PASSED"));
+    lcd_line2();
+    lcd_writeProgString(PSTR(" PLEASE CONFIRM!"));
+    os_waitForInput();
+    os_waitForNoInput();
+    lcd_clear();
+    lcd_writeProgString(PSTR("WAITING FOR"));
+    lcd_line2();
+    lcd_writeProgString(PSTR("TERMINATION"));
+    delayMs(1000);
+}
+
+
+PROGRAM(1, AUTOSTART) {
+    // Disable scheduler-timer
+    cbi(TCCR2B, CS22);
+    cbi(TCCR2B, CS21);
+    cbi(TCCR2B, CS20);
+
+    os_getProcessSlot(os_getCurrentProc())->priority = 2;
+
+    os_exec(2, 0b11000000);
+    os_exec(3, 0b10000000);
+
+    // Start test cycle
+    performTest();
+}
+
+PROGRAM(2, DONTSTART) {
+    uint8_t runtime = 0;
+
+    // Perform scheduling test
+    while (i < MAX_STEPS) {
+        runtime++;
+        //exec
+        // -
+
+        //yield
+        if (runtime == 2) {
+            capture[i++] = 20;
+            os_yield();
+            runtime++;
+        }
+
+        capture[i++] = 2;
+
+        //termination
+        if (runtime == 7) {
+            break;
+        }
+        TIMER2_COMPA_vect();
+    }
 }
 
 PROGRAM(3, DONTSTART) {
-    os_sh_readOpen(DRIVER, &shBlockYield);
-    os_sh_readOpen(DRIVER, &shBlockYield);
-    os_sh_readOpen(DRIVER, &shBlockYield);
-    os_sh_readOpen(DRIVER, &shBlockYield);
-    os_sh_readOpen(DRIVER, &shBlockYield);
-    os_sh_readOpen(DRIVER, &shBlockYield);
-    os_error("No yield when read opened");
-    while (1);
-}
+    uint8_t runtime = 0;
 
-PROGRAM(4, DONTSTART) {
-    if (mode == 0) {
-        os_sh_writeOpen(DRIVER, &shBlockYield);
-        os_sh_readOpen(DRIVER, &shBlockYield);
-        os_sh_readOpen(DRIVER, &shBlockYield);
-        os_error("No yield when w/r opened");
-        while (1);
-    } else if (mode == 1) {
-        os_sh_readOpen(DRIVER, &shBlockYield);
-        os_sh_readOpen(DRIVER, &shBlockYield);
-        os_sh_writeOpen(DRIVER, &shBlockYield);
-        os_error("No yield when r/w opened");
-        while (1);
+    // Perform scheduling test
+    while (i < MAX_STEPS) {
+        runtime++;
+        //exec
+        if (runtime == 1) {
+            os_exec(4, 0b11000000);
+        }
+
+        //yield
+        // -
+
+        capture[i++] = 3;
+
+        //termination
+        if (runtime == 4) {
+            break;
+        }
+        TIMER2_COMPA_vect();
     }
 }
+
+
+
+PROGRAM(4, DONTSTART) {
+    uint8_t runtime = 0;
+
+    // Perform scheduling test
+    while (i < MAX_STEPS) {
+        runtime++;
+        //exec
+        if (runtime == 4) {
+            os_exec(5, 0b10000000);
+            os_exec(6, 0b01000000);
+        }
+
+        //yield
+        if (runtime == 7) {
+            capture[i++] = 40;
+            os_yield();
+            runtime++;
+        }
+
+        capture[i++] = 4;
+
+        //termination
+        // -
+
+        TIMER2_COMPA_vect();
+    }
+}
+
+PROGRAM(5, DONTSTART) {
+    uint8_t runtime = 0;
+
+    // Perform scheduling test
+    while (i < MAX_STEPS) {
+        runtime++;
+        //exec
+        if (runtime == 1) {
+            os_exec(7, 0b10000000);
+        }
+
+        //yield
+        // -
+
+        capture[i++] = 5;
+
+        //termination
+        if (runtime == 3) {
+            break;
+        }
+        TIMER2_COMPA_vect();
+    }
+}
+
+PROGRAM(6, DONTSTART) {
+    uint8_t runtime = 0;
+
+    // Perform scheduling test
+    while (i < MAX_STEPS) {
+        runtime++;
+        //exec
+        // -
+
+        //yield
+        // -
+
+        capture[i++] = 6;
+
+        //termination
+        if (runtime == 1) {
+            break;
+        }
+        TIMER2_COMPA_vect();
+    }
+}
+
+PROGRAM(7, DONTSTART) {
+    uint8_t runtime = 0;
+
+    // Perform scheduling test
+    while (i < MAX_STEPS) {
+        runtime++;
+        //exec
+        // -
+
+        //yield
+        if (runtime == 1) {
+            capture[i++] = 70;
+            os_yield();
+            runtime++;
+        }
+
+        capture[i++] = 7;
+
+        //termination
+        if (runtime == 2) {
+            break;
+        }
+        TIMER2_COMPA_vect();
+    }
+}
+
+
