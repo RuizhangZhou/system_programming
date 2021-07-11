@@ -1,4 +1,3 @@
-
 #include "os_scheduler.h"
 #include "util.h"
 #include "os_input.h"
@@ -423,10 +422,11 @@ uint8_t os_getNumberOfActiveProcs(void) {
  *  \returns The amount of currently registered programs.
  */
 uint8_t os_getNumberOfRegisteredPrograms(void) {
-    uint8_t i;
-    for (i = 0; i < MAX_NUMBER_OF_PROGRAMS && *(os_getProgramSlot(i)); i++);
+    uint8_t count = 0;
+    for (ProcessID i = 0; i < MAX_NUMBER_OF_PROGRAMS; i++)
+        if (*(os_getProgramSlot(i))) count++;
     // Note that this only works because programs cannot be unregistered.
-    return i;
+    return count;
 }
 
 /*!

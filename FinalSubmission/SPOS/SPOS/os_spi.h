@@ -3,9 +3,6 @@
  *
  *  Driver for AVRs SPI module.
  *
- *  \author   youssef
- *  \date     2020-12-23
- *  \version  1.0
  */
 #include <stdint.h>
 #include <avr/io.h>

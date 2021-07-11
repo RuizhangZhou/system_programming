@@ -1,5 +1,3 @@
-
-
 #ifndef _OS_MEMORY_H
 #define _OS_MEMORY_H
 

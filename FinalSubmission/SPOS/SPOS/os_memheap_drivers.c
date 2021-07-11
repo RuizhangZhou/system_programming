@@ -1,5 +1,3 @@
-
-
 #include "os_memheap_drivers.h"
 #include "defines.h"
 #include "os_core.h"

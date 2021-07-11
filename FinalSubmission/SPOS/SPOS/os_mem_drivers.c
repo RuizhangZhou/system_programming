@@ -1,5 +1,3 @@
-
-
 #include "os_mem_drivers.h"
 #include "defines.h"
 #include "os_spi.h"
