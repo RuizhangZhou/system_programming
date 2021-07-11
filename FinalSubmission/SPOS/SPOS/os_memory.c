@@ -8,11 +8,11 @@
 
 MemAddr getMapAddrForUseAddr(Heap const *heap, MemAddr addr) {
 	// relative position im use-bereich
-	addr -= heap->useAreaStart;
+	addr -= heap->useStart;
 	// halbieren
 	addr /= 2;
 	// relative position im map-bereich
-	return addr + heap->mapAreaStart;
+	return addr + heap->mapStart;
 }
 
 /*!
@@ -33,13 +33,13 @@ void setProcVisitBit(Heap *heap, MemAddr addr) {
 	if (addr ==  0) {
 		return;
 	}
-	heap->procVisitArea[os_getCurrentProc() - 1] |= (1 << (16 * (addr - heap->useAreaStart) / heap->useAreaSize));
+	heap->procVisitArea[os_getCurrentProc() - 1] |= (1 << (16 * (addr - heap->useStart) / heap->useSize));
 }
 
 
 bool isMapHighNibbleForUseAddr(Heap const *heap, MemAddr addr) {
 	// relative position im use-bereich
-	addr -= heap->useAreaStart;
+	addr -= heap->useStart;
 	return addr % 2 == 0;
 }
 
@@ -84,10 +84,10 @@ void setHighNibble (Heap const *heap, MemAddr addr, MemValue value) {
 }
 
 void assertAddrInUseArea(Heap const *heap, MemAddr addr) {
-	if (addr < heap->useAreaStart) {
+	if (addr < heap->useStart) {
 		os_error("!!  expected  !!!!  use addr  !!");
 	}
-	if (addr >= (heap->useAreaStart + heap->useAreaSize)) {
+	if (addr >= (heap->useStart + heap->useSize)) {
 		os_error("!!  expected  !!!!  use addr  !!");
 	}
 }
@@ -182,7 +182,7 @@ void os_freeOwnerRestricted(Heap *heap, MemAddr addr, ProcessID owner) {
 	setMapEntry(heap, addr, 0);
 	addr++;
 	//           addr liegt im use bereich                 &&     in der allocTable steht F
-	while (addr < (heap->useAreaStart + heap->useAreaSize) && os_getMapEntry(heap, addr) == 0xF) {
+	while (addr < (heap->useStart + heap->useSize) && os_getMapEntry(heap, addr) == 0xF) {
 		setMapEntry(heap, addr, 0);
 		addr++;
 	}
@@ -309,22 +309,22 @@ void os_free (Heap *heap, MemAddr addr) {
 
 //! Get the size of the heap-map.
 size_t os_getMapSize (Heap const *heap) {
-	return heap->mapAreaSize;
+	return heap->mapSize;
 }
 
 //! Get the size of the usable heap.
 size_t os_getUseSize (Heap const *heap) {
-	return heap->useAreaSize;
+	return heap->useSize;
 }
 
 //! Get the start of the heap-map.
 MemAddr os_getMapStart (Heap const *heap) {
-	return heap->mapAreaStart;
+	return heap->mapStart;
 }
 
 //! Get the start of the usable heap.
 MemAddr os_getUseStart (Heap const *heap) {
-	return heap->useAreaStart;
+	return heap->useStart;
 }
 
 
@@ -342,12 +342,12 @@ void os_freeProcessMemory (Heap *heap, ProcessID pid) {
 	for (int j = 0; j < 16; j++) {
 		// falls das aktuelle bit gesetzt ist...
 		if (heap->procVisitArea[pid - 1] & (1 << j)) {
-			MemAddr offset = (heap->useAreaSize * j) / 16;
+			MemAddr offset = (heap->useSize * j) / 16;
 			// + 1 als "ceiling" statt "floor", weil sonst durch Rundungsfehler die letzte Adresse des Bereichs übersehen werden könnte.
-			// und der Sonderfall j == 15, da wir dann "nur" useAreaSize und net + 1 haben wollen, da sonst os_getMapEntry "überlaufen" könnte
-			MemAddr upfset = j + 1 != 16 ? (heap->useAreaSize * (j+1)) / 16 + 1 : heap->useAreaSize;
+			// und der Sonderfall j == 15, da wir dann "nur" useSize und net + 1 haben wollen, da sonst os_getMapEntry "überlaufen" könnte
+			MemAddr upfset = j + 1 != 16 ? (heap->useSize * (j+1)) / 16 + 1 : heap->useSize;
 			// dann den bereich durchsuchen um zu free'en
-			for (MemAddr i = heap->useAreaStart + offset; i < (heap->useAreaStart + upfset); i++) {
+			for (MemAddr i = heap->useStart + offset; i < (heap->useStart + upfset); i++) {
 				// wenn eine Zahl auftritt vergleichen mit PID und löschen den Chunk
 				if (os_getMapEntry(heap, i) == pid) {
 					os_freeOwnerRestricted(heap, i, pid);

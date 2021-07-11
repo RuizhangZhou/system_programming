@@ -3,10 +3,10 @@
 
 MemAddr os_Memory_FirstFit (Heap *heap, size_t size) {
 	size_t zeroChunkSize = 0;
-	MemAddr front = heap->useAreaStart;
-	MemAddr back = heap->useAreaStart;
+	MemAddr front = heap->useStart;
+	MemAddr back = heap->useStart;
 
-	while (back < (heap->useAreaStart + heap->useAreaSize)) {
+	while (back < (heap->useStart + heap->useSize)) {
 		if (os_getMapEntry(heap, front) != 0x0) {
 			front++;
 			back = front;
@@ -32,12 +32,12 @@ MemAddr os_Memory_FirstFit (Heap *heap, size_t size) {
 
 MemAddr os_Memory_BestFit (Heap *heap, size_t size) {
 	size_t currentChunkSize = 0;
-	size_t smallestFittingChunkSize = heap->useAreaSize;
-	MemAddr front = heap->useAreaStart;
-	MemAddr back = heap->useAreaStart;
+	size_t smallestFittingChunkSize = heap->useSize;
+	MemAddr front = heap->useStart;
+	MemAddr back = heap->useStart;
 	MemAddr best = 0;
 
-	while (back < (heap->useAreaStart + heap->useAreaSize)) {
+	while (back < (heap->useStart + heap->useSize)) {
 		if (os_getMapEntry(heap, front) != 0x0) {
 			front++;
 			back = front;
@@ -48,7 +48,7 @@ MemAddr os_Memory_BestFit (Heap *heap, size_t size) {
 			front = back;
 			continue;
 		}
-		while ((back < (heap->useAreaStart + heap->useAreaSize)) && os_getMapEntry(heap, back) == 0x0) {
+		while ((back < (heap->useStart + heap->useSize)) && os_getMapEntry(heap, back) == 0x0) {
 			back++;
 			currentChunkSize++;
 		}
@@ -63,11 +63,11 @@ MemAddr os_Memory_BestFit (Heap *heap, size_t size) {
 MemAddr os_Memory_WorstFit (Heap *heap, size_t size) {
 	size_t currentChunkSize = 0;
 	size_t biggestChunkSize = 0;
-	MemAddr front = heap->useAreaStart;
-	MemAddr back = heap->useAreaStart;
+	MemAddr front = heap->useStart;
+	MemAddr back = heap->useStart;
 	MemAddr worst = 0;
 
-	while (back < (heap->useAreaStart + heap->useAreaSize)) {
+	while (back < (heap->useStart + heap->useSize)) {
 		if (os_getMapEntry(heap, front) != 0x0) {
 			front++;
 			back = front;
@@ -78,7 +78,7 @@ MemAddr os_Memory_WorstFit (Heap *heap, size_t size) {
 			front = back;
 			continue;
 		}
-		while ((back < (heap->useAreaStart + heap->useAreaSize)) && os_getMapEntry(heap, back) == 0x0) {
+		while ((back < (heap->useStart + heap->useSize)) && os_getMapEntry(heap, back) == 0x0) {
 			back++;
 			currentChunkSize++;
 		}
@@ -95,7 +95,7 @@ MemAddr os_Memory_NextFit (Heap *heap, size_t size) {
 	MemAddr front = heap->nextFit;
 	MemAddr back = heap->nextFit;
 
-	while (back < (heap->useAreaStart + heap->useAreaSize)) {
+	while (back < (heap->useStart + heap->useSize)) {
 		if (os_getMapEntry(heap, front) != 0x0) {
 			front++;
 			back = front;

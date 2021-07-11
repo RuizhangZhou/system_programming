@@ -20,10 +20,7 @@ typedef uint16_t MemAddr;
 //! define type MemValue to store the value in memory addresses
 typedef uint8_t MemValue;
 
-/*!
- *  Enth�lt "charakteristische Werte des Speichermediums sowie 
- *  Funktionszeiger auf init, read und write
- */
+
 typedef struct MemDriver {
 	uint16_t start;
 	uint16_t size;
