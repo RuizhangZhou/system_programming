@@ -1,8 +1,8 @@
 #include "defines.h"
-#include "util.h"
 #include "lcd.h"
 #include "os_core.h"
 #include "os_scheduler.h"
+#include "util.h"
 
 #include <avr/pgmspace.h>
 
@@ -12,19 +12,19 @@
 
 //! Program's entry point
 int main(void) {
-    // Give the operating system a chance to initialize its private data.
-    // This also registers and starts the idle program.
-    os_init();
+  // Give the operating system a chance to initialize its private data.
+  // This also registers and starts the idle program.
+  os_init();
 
-    // os_init shows a boot message
-    // Wait and clear the LCD
-    delayMs(600);
-    lcd_clear();
+  // os_init shows a boot message
+  // Wait and clear the LCD
+  delayMs(600);
+  lcd_clear();
 
-    // Start the operating system
-    os_startScheduler();
+  // Start the operating system
+  os_startScheduler();
 
-    return 1;
+  return 1;
 }
 
 /*!

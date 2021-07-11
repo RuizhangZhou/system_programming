@@ -1,19 +1,20 @@
 #include "os_core.h"
 #include "defines.h"
-#include "util.h"
 #include "lcd.h"
 #include "os_input.h"
 #include "os_memheap_drivers.h"
+#include "util.h"
 
-#include <avr/interrupt.h>
 #include <avr/common.h>
+#include <avr/interrupt.h>
 
 #include <avr/interrupt.h>
 
 void os_initScheduler(void);
 
-//variable specially forcing the c/c++ linker to not initialize the variable so we can detect its initialized state
-uint8_t softResetDetector __attribute__ ((section (".noinit")));
+// variable specially forcing the c/c++ linker to not initialize the variable so
+// we can detect its initialized state
+uint8_t softResetDetector __attribute__((section(".noinit")));
 
 /*! \file
  *
@@ -21,120 +22,125 @@ uint8_t softResetDetector __attribute__ ((section (".noinit")));
  *
  */
 
-/* 
+/*
  * Certain key-functionalities of SPOS do not work properly if optimization is
  * disabled (O0). It will still compile with O0, but you may encounter
  * run-time errors. This check is supposed to remind you on that.
  */
 #ifndef __OPTIMIZE__
-    #warning "Compiler optimizations disabled; SPOS and Testtasks may not work properly."
+#warning                                                                       \
+    "Compiler optimizations disabled; SPOS and Testtasks may not work properly."
 #endif
 
 /*!
  *  Initializes the used timers.
  */
 void os_init_timer(void) {
-    // Init timer 2 (Scheduler)
-    sbi(TCCR2A, WGM21); // Clear on timer compare match
+  // Init timer 2 (Scheduler)
+  sbi(TCCR2A, WGM21); // Clear on timer compare match
 
-    sbi(TCCR2B, CS22); // Prescaler 1024  1
-    sbi(TCCR2B, CS21); // Prescaler 1024  1
-    sbi(TCCR2B, CS20); // Prescaler 1024  1
-    sbi(TIMSK2, OCIE2A); // Enable interrupt
-    OCR2A = 60;
+  sbi(TCCR2B, CS22);   // Prescaler 1024  1
+  sbi(TCCR2B, CS21);   // Prescaler 1024  1
+  sbi(TCCR2B, CS20);   // Prescaler 1024  1
+  sbi(TIMSK2, OCIE2A); // Enable interrupt
+  OCR2A = 60;
 
-    // Init timer 0 with prescaler 256
-    cbi(TCCR0B, CS00);
-    cbi(TCCR0B, CS01);
-    sbi(TCCR0B, CS02);
+  // Init timer 0 with prescaler 256
+  cbi(TCCR0B, CS00);
+  cbi(TCCR0B, CS01);
+  sbi(TCCR0B, CS02);
 
-    sbi(TIMSK0, TOIE0);
+  sbi(TIMSK0, TOIE0);
 }
 
 /*!
-*
-*	Reads out the MCUs reset register and prints the last hardware reset reasons on the lcd
-*/
+ *
+ *	Reads out the MCUs reset register and prints the last hardware reset
+ *reasons on the lcd
+ */
 
-void os_checkResetRegister(uint8_t blocking){
-    lcd_line2();
-    //evaluating hardware reset register
-    if(MCUSR){
-        //checking Bit 4 = JTag reset Register only set when AVR_Reset is recieved
-        if(gbi(MCUSR,4)){
-            lcd_writeProgString(PSTR("JT "));
-        }
-        //checking Bit 3 = Watchdog reset register
-        if(gbi(MCUSR,3)){
-            lcd_writeProgString(PSTR("WD "));
-        }
-        //checking Bit 2 = Brown out detection register
-        if(gbi(MCUSR,2)){
-            lcd_writeProgString(PSTR("BO "));
-        }
-        //checking Bit 1 = External reset register (external reset button pressed)
-        if(gbi(MCUSR,1)){
-            lcd_writeProgString(PSTR("EXT "));
-        }
-        //checking Bit 0 = Power reset register mains power failed
-        if(gbi(MCUSR,0)){
-            lcd_writeProgString(PSTR("POW"));
-        }
-        //if user is required to confirm error by button presses
-        if(blocking){
-            os_waitForInput();
-            os_waitForNoInput();
-        }
-        //reset hardware and software reset detectors
-        MCUSR = 0;
-        softResetDetector = 0;
+void os_checkResetRegister(uint8_t blocking) {
+  lcd_line2();
+  // evaluating hardware reset register
+  if (MCUSR) {
+    // checking Bit 4 = JTag reset Register only set when AVR_Reset is recieved
+    if (gbi(MCUSR, 4)) {
+      lcd_writeProgString(PSTR("JT "));
     }
-}
-
-/*!
-*
-*	Reads out the specially defined soft reset variable to detect softresets by the MCU
-*/
-
-void os_checkSoftReset(uint8_t blocking){
-    //if variable is already initialized the main method already had ran to a certain point and softly reset
-    if(softResetDetector){
-        lcd_clear();
-        lcd_writeProgString(PSTR("--SYSTEM ERROR--"));
-        lcd_writeProgString(PSTR("---SOFT RESET---"));
-        if(blocking){
-            os_waitForInput();
-            os_waitForNoInput();
-        }
+    // checking Bit 3 = Watchdog reset register
+    if (gbi(MCUSR, 3)) {
+      lcd_writeProgString(PSTR("WD "));
     }
-    //initialize global variable to detect soft resets later
-    softResetDetector = 0xFF;
+    // checking Bit 2 = Brown out detection register
+    if (gbi(MCUSR, 2)) {
+      lcd_writeProgString(PSTR("BO "));
+    }
+    // checking Bit 1 = External reset register (external reset button pressed)
+    if (gbi(MCUSR, 1)) {
+      lcd_writeProgString(PSTR("EXT "));
+    }
+    // checking Bit 0 = Power reset register mains power failed
+    if (gbi(MCUSR, 0)) {
+      lcd_writeProgString(PSTR("POW"));
+    }
+    // if user is required to confirm error by button presses
+    if (blocking) {
+      os_waitForInput();
+      os_waitForNoInput();
+    }
+    // reset hardware and software reset detectors
+    MCUSR = 0;
+    softResetDetector = 0;
+  }
 }
 
 /*!
- *  Readies stack, scheduler and heap for first use. Additionally, the LCD is initialized. In order to do those tasks,
- *  it calls the sub function os_initScheduler().
+ *
+ *	Reads out the specially defined soft reset variable to detect softresets
+ *by the MCU
+ */
+
+void os_checkSoftReset(uint8_t blocking) {
+  // if variable is already initialized the main method already had ran to a
+  // certain point and softly reset
+  if (softResetDetector) {
+    lcd_clear();
+    lcd_writeProgString(PSTR("--SYSTEM ERROR--"));
+    lcd_writeProgString(PSTR("---SOFT RESET---"));
+    if (blocking) {
+      os_waitForInput();
+      os_waitForNoInput();
+    }
+  }
+  // initialize global variable to detect soft resets later
+  softResetDetector = 0xFF;
+}
+
+/*!
+ *  Readies stack, scheduler and heap for first use. Additionally, the LCD is
+ * initialized. In order to do those tasks, it calls the sub function
+ * os_initScheduler().
  */
 void os_init(void) {
-    // Init timer 0 and 2
-    os_init_timer();
+  // Init timer 0 and 2
+  os_init_timer();
 
-    // Init buttons
-    os_initInput();
+  // Init buttons
+  os_initInput();
 
-    // Init LCD display
-    lcd_init();
+  // Init LCD display
+  lcd_init();
 
-    lcd_writeProgString(PSTR("Booting SPOS ..."));
-    os_checkResetRegister(0);
-    os_checkSoftReset(1);
-    delayMs(2000);
+  lcd_writeProgString(PSTR("Booting SPOS ..."));
+  os_checkResetRegister(0);
+  os_checkSoftReset(1);
+  delayMs(2000);
 
-    os_initScheduler();
-	
-    os_initHeaps();//init int Heap and ext Heap
+  os_initScheduler();
 
-    os_systemTime_reset();
+  os_initHeaps(); // init int Heap and ext Heap
+
+  os_systemTime_reset();
 }
 
 /*!
@@ -142,26 +148,28 @@ void os_init(void) {
  *
  *  \param str  The error to be displayed
  */
-void os_errorPStr(char const* str) {
-    
-	
-	uint8_t oldSreg = SREG;//get the MSB of original SREG
-    
-    SREG &= 0b01111111;
-	
-	lcd_clear();
-	lcd_writeProgString(str);
-	//lcd_writeProgString(PSTR(str)); // maybe * ?// lcd_writeProgString(PSTR) compiling with error
+void os_errorPStr(char const *str) {
 
-    
-	//initialize Input
-	os_initInput();
-	
-	while( os_getInput() != 0b00001001 ){ /* 继续等待 */ }
-	
-    // ENTER + ESC -> button1 + button4 (what if other buttons are pressed?)	lcd_clear();
-    //if vorSREG=0,we don't need to do anything, cuz MSB of SREG is 0 now, we just keep the SREG the same as it originally was
+  uint8_t oldSreg = SREG; // get the MSB of original SREG
 
-	
-	SREG |= (oldSreg & 0b10000000);
+  SREG &= 0b01111111;
+
+  lcd_clear();
+  lcd_writeProgString(str);
+  // lcd_writeProgString(PSTR(str)); // maybe * ?// lcd_writeProgString(PSTR)
+  // compiling with error
+
+  // initialize Input
+  os_initInput();
+
+  while (os_getInput() != 0b00001001) { /* 继续等待 */
+  }
+
+  // ENTER + ESC -> button1 + button4 (what if other buttons are pressed?)
+  // lcd_clear();
+  // if vorSREG=0,we don't need to do anything, cuz MSB of SREG is 0 now, we
+  // just keep the SREG the same as it originally was
+  lcd_clear();
+
+  SREG |= (oldSreg & 0b10000000);
 }

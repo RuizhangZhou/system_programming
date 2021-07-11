@@ -22,34 +22,36 @@
 
 //! The enum specifying which scheduling strategies exist
 typedef enum SchedulingStrategy {
-	OS_SS_EVEN,
-	OS_SS_RANDOM,
-	OS_SS_RUN_TO_COMPLETION,
-	OS_SS_ROUND_ROBIN,
-	OS_SS_INACTIVE_AGING,
-	OS_SS_MULTI_LEVEL_FEEDBACK_QUEUE
+  OS_SS_EVEN,
+  OS_SS_RANDOM,
+  OS_SS_RUN_TO_COMPLETION,
+  OS_SS_ROUND_ROBIN,
+  OS_SS_INACTIVE_AGING,
+  OS_SS_MULTI_LEVEL_FEEDBACK_QUEUE
 } SchedulingStrategy;
 
 // Change this define to reflect the number of available strategies:
 #define SCHEDULING_STRATEGY_COUNT 6
 
 //! Get a pointer to the process structure by process ID
-Process* os_getProcessSlot(ProcessID pid);
+Process *os_getProcessSlot(ProcessID pid);
 
 //! Starts the scheduler
 void os_startScheduler(void);
 
 //! Registers a program (will not be started)
-ProgramID os_registerProgram(Program* program);
+ProgramID os_registerProgram(Program *program);
 
 //! Checks if a program is to be executed at boot-time
 bool os_checkAutostartProgram(ProgramID programID);
 
-//! Looks up the function of a program with the passed ID (index) and returns NULL on failure
-Program* os_lookupProgramFunction(ProgramID programID);
+//! Looks up the function of a program with the passed ID (index) and returns
+//! NULL on failure
+Program *os_lookupProgramFunction(ProgramID programID);
 
-//! Looks up the ID (i.e. index) of a program and returns INVALID_PROGRAM on failure
-ProgramID os_lookupProgramID(Program* program);
+//! Looks up the ID (i.e. index) of a program and returns INVALID_PROGRAM on
+//! failure
+ProgramID os_lookupProgramID(Program *program);
 
 //! Executes a process by instantiating a program
 ProcessID os_exec(ProgramID programID, Priority priority);
@@ -82,7 +84,9 @@ void os_enterCriticalSection(void);
 void os_leaveCriticalSection(void);
 
 /*!
- * \brief Kills a process by cleaning up the corresponding slot in os_processes. It also calls the garbage collection in order to free any memory that has been allocated by the killed process.
+ * \brief Kills a process by cleaning up the corresponding slot in os_processes.
+ * It also calls the garbage collection in order to free any memory that has
+ * been allocated by the killed process.
  *
  * \param pid The ProcessID of the process to be killed
  * \return True, if the killing process was successful
@@ -90,9 +94,11 @@ void os_leaveCriticalSection(void);
 bool os_kill(ProcessID pid);
 
 /*!
- * \brief Encapsulates any running process in order make it possible for processes to terminate
+ * \brief Encapsulates any running process in order make it possible for
+ * processes to terminate
  *
- * This wrapper enables the possibility to perfom a few necessary steps after the actual process function has finished.
+ * This wrapper enables the possibility to perfom a few necessary steps after
+ * the actual process function has finished.
  */
 void os_dispatcher();
 

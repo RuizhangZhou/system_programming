@@ -18,7 +18,7 @@
 #define AVR_CLOCK_FREQUENCY 20000000ul
 
 #ifdef F_CPU
-    #undef F_CPU
+#undef F_CPU
 #endif
 
 //! Clock frequency for WinAVR delay function

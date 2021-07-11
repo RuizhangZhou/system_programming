@@ -13,9 +13,9 @@
 #ifndef _LCD_H
 #define _LCD_H
 
+#include <avr/pgmspace.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <avr/pgmspace.h>
 
 // Set to 1 for SPOS starting from Versuch 2
 #define SPOS_CONFIG 1
@@ -26,32 +26,32 @@
 
 #if SPOS_CONFIG == 0
 
-    #define sbi(ADDRESS,BIT) (ADDRESS |= (1<<BIT))
-    #define cbi(ADDRESS,BIT) (ADDRESS &= ~(1<<BIT))
+#define sbi(ADDRESS, BIT) (ADDRESS |= (1 << BIT))
+#define cbi(ADDRESS, BIT) (ADDRESS &= ~(1 << BIT))
 
-    // Before SPOS we need to use system delay
-    #define delayMs(TIME) _delay_ms(TIME)
+// Before SPOS we need to use system delay
+#define delayMs(TIME) _delay_ms(TIME)
 
-    //! DDR of Port connected to LCD
-    #define LCD_PORT_DDR DDRB
+//! DDR of Port connected to LCD
+#define LCD_PORT_DDR DDRB
 
-    //! PORT connected to LCD
-    #define LCD_PORT_DATA PORTB
+//! PORT connected to LCD
+#define LCD_PORT_DATA PORTB
 
-    //! PIN connected to LCD
-    #define LCD_PIN PINB
+//! PIN connected to LCD
+#define LCD_PIN PINB
 #else // Versuch 2+
-    #include "defines.h"
-    #include "util.h"
+#include "defines.h"
+#include "util.h"
 
-    //! DDR of Port connected to LCD
-    #define LCD_PORT_DDR DDRA
+//! DDR of Port connected to LCD
+#define LCD_PORT_DDR DDRA
 
-    //! PORT connected to LCD
-    #define LCD_PORT_DATA PORTA
+//! PORT connected to LCD
+#define LCD_PORT_DATA PORTA
 
-    //! PIN connected to LCD
-    #define LCD_PIN PINA
+//! PIN connected to LCD
+#define LCD_PIN PINA
 #endif
 
 //! First value for init
@@ -132,15 +132,11 @@
 //----------------------------------------------------------------------------
 
 //! Defines a custom char out of eight rows passed as integer values
-#define CUSTOM_CHAR(cc0,cc1,cc2,cc3,cc4,cc5,cc6,cc7) 0 \
-    | (((uint64_t)(cc0)) << 0*8) \
-    | (((uint64_t)(cc1)) << 1*8) \
-    | (((uint64_t)(cc2)) << 2*8) \
-    | (((uint64_t)(cc3)) << 3*8) \
-    | (((uint64_t)(cc4)) << 4*8) \
-    | (((uint64_t)(cc5)) << 5*8) \
-    | (((uint64_t)(cc6)) << 6*8) \
-    | (((uint64_t)(cc7)) << 7*8)
+#define CUSTOM_CHAR(cc0, cc1, cc2, cc3, cc4, cc5, cc6, cc7)                    \
+  0 | (((uint64_t)(cc0)) << 0 * 8) | (((uint64_t)(cc1)) << 1 * 8) |            \
+      (((uint64_t)(cc2)) << 2 * 8) | (((uint64_t)(cc3)) << 3 * 8) |            \
+      (((uint64_t)(cc4)) << 4 * 8) | (((uint64_t)(cc5)) << 5 * 8) |            \
+      (((uint64_t)(cc6)) << 6 * 8) | (((uint64_t)(cc7)) << 7 * 8)
 
 //----------------------------------------------------------------------------
 // Custom Chars
@@ -148,72 +144,28 @@
 
 // Note: 8===0
 #define LCD_CC_IXI 0
-#define LCD_CC_IXI_BITMAP (CUSTOM_CHAR( \
-    0x00, \
-    0x00, \
-    0x01, \
-    0x00, \
-    0x15, \
-    0x09, \
-    0x15, \
-    0x00))
+#define LCD_CC_IXI_BITMAP                                                      \
+  (CUSTOM_CHAR(0x00, 0x00, 0x01, 0x00, 0x15, 0x09, 0x15, 0x00))
 // Note: 9===1
 #define LCD_CC_TILDE 1
-#define LCD_CC_TILDE_BITMAP (CUSTOM_CHAR( \
-    0x00, \
-    0x08, \
-    0x15, \
-    0x02, \
-    0x00, \
-    0x00, \
-    0x00, \
-    0x00))
-
+#define LCD_CC_TILDE_BITMAP                                                    \
+  (CUSTOM_CHAR(0x00, 0x08, 0x15, 0x02, 0x00, 0x00, 0x00, 0x00))
 
 #define LCD_CC_DEGREE 2
-#define LCD_CC_DEGREE_BITMAP (CUSTOM_CHAR( \
-    0x04, \
-    0x0A, \
-    0x04, \
-    0x00, \
-    0x00, \
-    0x00, \
-    0x00, \
-    0x00))
+#define LCD_CC_DEGREE_BITMAP                                                   \
+  (CUSTOM_CHAR(0x04, 0x0A, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00))
 
 #define LCD_CC_ACCENT 3
-#define LCD_CC_ACCENT_BITMAP (CUSTOM_CHAR( \
-    0x02, \
-    0x04, \
-    0x08, \
-    0x00, \
-    0x00, \
-    0x00, \
-    0x00, \
-    0x00))
-
+#define LCD_CC_ACCENT_BITMAP                                                   \
+  (CUSTOM_CHAR(0x02, 0x04, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00))
 
 #define LCD_CC_BACKSLASH 4
-#define LCD_CC_BACKSLASH_BITMAP (CUSTOM_CHAR( \
-    0x00, \
-    0x10, \
-    0x08, \
-    0x04, \
-    0x02, \
-    0x01, \
-    0x00, \
-    0x00))
+#define LCD_CC_BACKSLASH_BITMAP                                                \
+  (CUSTOM_CHAR(0x00, 0x10, 0x08, 0x04, 0x02, 0x01, 0x00, 0x00))
 
 #define LCD_CC_MU 5
-#define LCD_CC_MU_BITMAP (CUSTOM_CHAR( \
-    0x00, \
-    0x00, \
-    0x09, \
-    0x09, \
-    0x09, \
-    0x0F, \
-    0x08, \
-    0x00))
+#define LCD_CC_MU_BITMAP                                                       \
+  (CUSTOM_CHAR(0x00, 0x00, 0x09, 0x09, 0x09, 0x0F, 0x08, 0x00))
 
 //----------------------------------------------------------------------------
 // Function headers
@@ -274,10 +226,10 @@ void lcd_writeHex(uint16_t number);
 void lcd_writeDec(uint16_t number);
 
 //! Write text string
-void lcd_writeString(char const* text);
+void lcd_writeString(char const *text);
 
 //! Write char PROGMEM* string
-void lcd_writeProgString(const char* string);
+void lcd_writeProgString(const char *string);
 
 //! Write a draw bar
 void lcd_drawBar(uint8_t percent);
@@ -289,7 +241,7 @@ void lcd_registerCustomChar(uint8_t addr, uint64_t chr);
 void lcd_write32bitHex(uint32_t number);
 
 //! Write a voltage with valueUpperBound as float voltage with voltUpperBound
-void lcd_writeVoltage(uint16_t voltage, uint16_t valueUpperBound, uint8_t voltUpperBound);
+void lcd_writeVoltage(uint16_t voltage, uint16_t valueUpperBound,
+                      uint8_t voltUpperBound);
 
 #endif
-
