@@ -16,32 +16,27 @@ typedef enum AllocStrategy {
 	OS_MEM_WORST
 } AllocStrategy;
 
-/*!
- *  Enth�lt "charakteristische Werte des Speichermediums sowie 
- *  Funktionszeiger auf init, read und write
- */
+
 typedef struct Heap {
+	// Einen Zeiger auf den Speichertreiber, welcher dem Heap assoziiert ist
 	MemDriver *driver;
-	uint16_t mapAreaStart;
-	uint16_t mapAreaSize;
-	uint16_t useAreaStart;
-	uint16_t useAreaSize;
+	uint16_t mapStart;
+	uint16_t mapSize;
+	uint16_t useStart;
+	uint16_t useSize;
 	AllocStrategy allocStrategy;
 	uint16_t nextFit;
-	const char *name;
+	const char *name;//the name of this heap
 	uint16_t procVisitArea[7];
 } Heap;
 
-/*!
- *  alle Nibbles des Map-Bereichs aller vorhandenen Heaptreiber mit 0x00 �berschreiben.
- *  Soll an geeigneter Stelle zur Initialisierung aufgerufen werden.
- */
+//Initialises all Heaps.
 void os_initHeaps(void);
 
-//! zum Heapindex den passenden Zeiger auf den Heap zur�ckgeben. intHeap hat Index 0.
+//Needed for Taskmanager interaction.
 Heap* os_lookupHeap(uint8_t index);
 
-//! gibt Anzahl an existierenden Heaps zur�ck.
+//Needed for Taskmanager interaction.
 size_t os_getHeapListLength(void);
 
 Heap intHeap__;

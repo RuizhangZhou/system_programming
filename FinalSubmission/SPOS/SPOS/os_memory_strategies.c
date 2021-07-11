@@ -1,124 +1,119 @@
 #include "os_memory_strategies.h"
 #include "os_memory.h"
 
-// letzte gefunden adresse von NextFit speicheren
-
-
 MemAddr os_Memory_FirstFit (Heap *heap, size_t size) {
 	size_t zeroChunkSize = 0;
-	MemAddr slow = heap->useAreaStart;
-	MemAddr fast = heap->useAreaStart;
+	MemAddr front = heap->useAreaStart;
+	MemAddr back = heap->useAreaStart;
 
-	while (fast < (heap->useAreaStart + heap->useAreaSize)) {
-		if (os_getMapEntry(heap, slow) != 0x0) {
-			slow++;
-			fast = slow;
-			// das continue ist, damit fast sicher innerhalb der use-area ist
+	while (back < (heap->useAreaStart + heap->useAreaSize)) {
+		if (os_getMapEntry(heap, front) != 0x0) {
+			front++;
+			back = front;
 			continue;
 		}
-		if (os_getMapEntry(heap, fast) != 0x0) {
+		if (os_getMapEntry(heap, back) != 0x0) {
 			zeroChunkSize = 0;
-			slow = fast;
+			front = back;
 			continue;
 		}
-		if (os_getMapEntry(heap, fast) == 0x0 && zeroChunkSize < size) {
-			fast++;
+		if (os_getMapEntry(heap, back) == 0x0 && zeroChunkSize < size) {
+			back++;
 			zeroChunkSize++;
 		}
 		if (zeroChunkSize == size) {
-			return slow;
+			return front;
 		}
 	}
 	return 0;
 }
 
-MemAddr os_Memory_NextFit (Heap *heap, size_t size) {
-	size_t zeroChunkSize = 0;
-	MemAddr slow = heap->nextFit;
-	MemAddr fast = heap->nextFit;
 
-	while (fast < (heap->useAreaStart + heap->useAreaSize)) {
-		if (os_getMapEntry(heap, slow) != 0x0) {
-			slow++;
-			fast = slow;
-			// das continue ist, damit fast sicher innerhalb der use-area ist
+
+MemAddr os_Memory_BestFit (Heap *heap, size_t size) {
+	size_t currentChunkSize = 0;
+	size_t smallestFittingChunkSize = heap->useAreaSize;
+	MemAddr front = heap->useAreaStart;
+	MemAddr back = heap->useAreaStart;
+	MemAddr best = 0;
+
+	while (back < (heap->useAreaStart + heap->useAreaSize)) {
+		if (os_getMapEntry(heap, front) != 0x0) {
+			front++;
+			back = front;
 			continue;
 		}
-		if (os_getMapEntry(heap, fast) != 0x0) {
-			zeroChunkSize = 0;
-			slow = fast;
+		if (os_getMapEntry(heap, back) != 0x0) {
+			currentChunkSize = 0;
+			front = back;
 			continue;
 		}
-		if (os_getMapEntry(heap, fast) == 0x0 && zeroChunkSize < size) {
-			fast++;
-			zeroChunkSize++;
+		while ((back < (heap->useAreaStart + heap->useAreaSize)) && os_getMapEntry(heap, back) == 0x0) {
+			back++;
+			currentChunkSize++;
 		}
-		if (zeroChunkSize == size) {
-			heap->nextFit = slow + size;
-			return slow;
+		if (currentChunkSize >= size && currentChunkSize <= smallestFittingChunkSize) {
+			smallestFittingChunkSize = currentChunkSize;
+			best = front;
 		}
 	}
-	return os_Memory_FirstFit(heap, size);
+	return best;
 }
 
 MemAddr os_Memory_WorstFit (Heap *heap, size_t size) {
 	size_t currentChunkSize = 0;
 	size_t biggestChunkSize = 0;
-	MemAddr slow = heap->useAreaStart;
-	MemAddr fast = heap->useAreaStart;
+	MemAddr front = heap->useAreaStart;
+	MemAddr back = heap->useAreaStart;
 	MemAddr worst = 0;
 
-	while (fast < (heap->useAreaStart + heap->useAreaSize)) {
-		if (os_getMapEntry(heap, slow) != 0x0) {
-			slow++;
-			fast = slow;
-			// das continue ist, damit fast sicher innerhalb der use-area ist
+	while (back < (heap->useAreaStart + heap->useAreaSize)) {
+		if (os_getMapEntry(heap, front) != 0x0) {
+			front++;
+			back = front;
 			continue;
 		}
-		if (os_getMapEntry(heap, fast) != 0x0) {
+		if (os_getMapEntry(heap, back) != 0x0) {
 			currentChunkSize = 0;
-			slow = fast;
+			front = back;
 			continue;
 		}
-		while ((fast < (heap->useAreaStart + heap->useAreaSize)) && os_getMapEntry(heap, fast) == 0x0) {
-			fast++;
+		while ((back < (heap->useAreaStart + heap->useAreaSize)) && os_getMapEntry(heap, back) == 0x0) {
+			back++;
 			currentChunkSize++;
 		}
 		if (currentChunkSize >= size && currentChunkSize >= biggestChunkSize) {
 			biggestChunkSize = currentChunkSize;
-			worst = slow;
+			worst = front;
 		}
 	}
 	return worst;
 }
 
-MemAddr os_Memory_BestFit (Heap *heap, size_t size) {
-	size_t currentChunkSize = 0;
-	size_t smallestFittingChunkSize = heap->useAreaSize;
-	MemAddr slow = heap->useAreaStart;
-	MemAddr fast = heap->useAreaStart;
-	MemAddr best = 0;
+MemAddr os_Memory_NextFit (Heap *heap, size_t size) {
+	size_t zeroChunkSize = 0;
+	MemAddr front = heap->nextFit;
+	MemAddr back = heap->nextFit;
 
-	while (fast < (heap->useAreaStart + heap->useAreaSize)) {
-		if (os_getMapEntry(heap, slow) != 0x0) {
-			slow++;
-			fast = slow;
-			// das continue ist, damit fast sicher innerhalb der use-area ist
+	while (back < (heap->useAreaStart + heap->useAreaSize)) {
+		if (os_getMapEntry(heap, front) != 0x0) {
+			front++;
+			back = front;
 			continue;
 		}
-		if (os_getMapEntry(heap, fast) != 0x0) {
-			currentChunkSize = 0;
-			slow = fast;
+		if (os_getMapEntry(heap, back) != 0x0) {
+			zeroChunkSize = 0;
+			front = back;
 			continue;
 		}
-		while ((fast < (heap->useAreaStart + heap->useAreaSize)) && os_getMapEntry(heap, fast) == 0x0) {
-			fast++;
-			currentChunkSize++;
+		if (os_getMapEntry(heap, back) == 0x0 && zeroChunkSize < size) {
+			back++;
+			zeroChunkSize++;
 		}
-		if (currentChunkSize >= size && currentChunkSize <= smallestFittingChunkSize) {
-			smallestFittingChunkSize = currentChunkSize;
-			best = slow;
+		if (zeroChunkSize == size) {
+			heap->nextFit = front + size;
+			return front;
 		}
 	}
-	return best;
+	return os_Memory_FirstFit(heap, size);
 }

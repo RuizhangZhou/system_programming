@@ -6,10 +6,18 @@
 
 #include <stdint.h>
 
-//! Vom Betriebssystem verwaltete Speicheradresse
+//Instruction Set in Document 23LC1024 page 6
+/*
+#define CMD_WRMR 1
+#define CMD_RDMR 5
+#define CMD_READ 3
+#define CMD_WRITE 2
+*/
+
+//! define type MemAddr to store 16 bits memory addresses
 typedef uint16_t MemAddr;
 
-//! Speicheratom, das genau einem Prozess zugeteilt werden kann.
+//! define type MemValue to store the value in memory addresses
 typedef uint8_t MemValue;
 
 /*!
@@ -24,16 +32,19 @@ typedef struct MemDriver {
 	void (*write)(MemAddr, MemValue);
 } MemDriver;
 
-//! Initialisiert das Speichermedium.
+//! initialises heap and calls os_init() to initialise allocation table
 void init(void);
 
-//! Liest Wert an Adresse und gibt diesen zur�ck (gegeben der richtige Prozess fragt?).
+//! reads value from heap address addr
 MemValue read(MemAddr addr);
 
-//! Schreibt den Wert an angegebene Adresse, gegeben der richtige Prozess fragt.
+//! write value in heap address addr
 void write(MemAddr addr, MemValue value);
 
+//This specific MemDriver is initialised in os_mem_drivers.c.
 MemDriver intSRAM__;
+
+//This specific MemDriver is initialised in os_mem_drivers.c.
 MemDriver extSRAM__;
 
 #endif

@@ -7,7 +7,7 @@
 #define USE_AREA_START	(HEAPBOTTOM + MAP_AREA_SIZE)
 #define USE_AREA_SIZE	(MAP_AREA_SIZE * 2)
 
-#define EXT_SRAM_SIZE		63999
+#define EXT_SRAM_SIZE		63999 //64KiB?
 #define EXT_HEAPBOTTOM		(0x0)
 #define EXT_MAP_AREA_SIZE	(EXT_SRAM_SIZE / 3)
 #define EXT_USE_AREA_START	(EXT_MAP_AREA_SIZE)
@@ -17,16 +17,16 @@
 extern uint8_t const __heap_start;
 
 
-const PROGMEM char intStr[] = "internal";
+const PROGMEM char intStr[] = "internal";//string?
 const PROGMEM char extStr[] = "external";
 
 
 Heap intHeap__ = {
 	.driver = intSRAM,
-	.mapAreaStart = HEAPBOTTOM,
-	.mapAreaSize = MAP_AREA_SIZE,
-	.useAreaStart = USE_AREA_START,
-	.useAreaSize = USE_AREA_SIZE,
+	.mapStart = HEAPBOTTOM,
+	.mapSize = MAP_AREA_SIZE,
+	.useStart = USE_AREA_START,
+	.useSize = USE_AREA_SIZE,
 	.allocStrategy = OS_MEM_FIRST,
 	.nextFit = USE_AREA_START,
 	.name = intStr,
@@ -35,10 +35,10 @@ Heap intHeap__ = {
 
 Heap extHeap__ = {
 	.driver = extSRAM,
-	.mapAreaStart = EXT_HEAPBOTTOM,
-	.mapAreaSize = EXT_MAP_AREA_SIZE,
-	.useAreaStart = EXT_USE_AREA_START,
-	.useAreaSize = EXT_USE_AREA_SIZE,
+	.mapStart = EXT_HEAPBOTTOM,
+	.mapSize = EXT_MAP_AREA_SIZE,
+	.useStart = EXT_USE_AREA_START,
+	.useSize = EXT_USE_AREA_SIZE,
 	.allocStrategy = OS_MEM_FIRST,
 	.nextFit = EXT_USE_AREA_START,
 	.name = extStr,	
@@ -54,13 +54,13 @@ void checkIntHeapStart() {
 void os_initHeaps() {
 	checkIntHeapStart();
 	
-	for (MemAddr i = 0; i < intHeap__.mapAreaSize; i++) {
-		intSRAM->write(intHeap__.mapAreaStart + i, (MemValue)0x00);
+	for (MemAddr i = 0; i < intHeap__.mapSize; i++) {
+		intSRAM->write(intHeap__.mapStart + i, (MemValue)0x00);
 	}
 	
 	extHeap__.driver->init();
-	for (MemAddr i = 0; i < extHeap__.mapAreaSize; i++) {
-		extSRAM->write(extHeap__.mapAreaStart + i, (MemValue)0x00);
+	for (MemAddr i = 0; i < extHeap__.mapSize; i++) {
+		extSRAM->write(extHeap__.mapStart + i, (MemValue)0x00);
 	}
 	
 }
@@ -75,7 +75,8 @@ Heap* os_lookupHeap(uint8_t index) {
 }
 
 size_t os_getHeapListLength() {
-	return 2;
+	//return sizeof(*intHeap)/sizeof(Heap);//=1 (Versuch 3)
+	return 2;//just one slave as extHeap?（Versuch 4）
 }
 
 
