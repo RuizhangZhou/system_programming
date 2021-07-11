@@ -454,9 +454,12 @@ MemAddr os_sh_readOpen(Heap const* heap, MemAddr const *ptr) {
 	os_enterCriticalSection();
 
 	if (getOwnerOfChunk(heap, *ptr) < 8) {
+		/*
 		lcd_clear();
-		lcd_writeProgString(PSTR(" os_sh_readOpen on non-shm: err"));
+		lcd_writeProgString(PSTR("os_sh_readOpen on non-sm"));
 		os_waitForInput();
+		*/
+		os_error("os_sh_readOpen on non-sm");
 		os_leaveCriticalSection();
 		return 0;
 	}
@@ -477,9 +480,12 @@ MemAddr os_sh_writeOpen(Heap const* heap, MemAddr const *ptr) {
 	os_enterCriticalSection();
 
 	if (getOwnerOfChunk(heap, *ptr) < 8) {
+		/*
 		lcd_clear();
-		lcd_writeProgString(PSTR("os_sh_writeOpen on non-shm: err"));
+		lcd_writeProgString(PSTR("os_sh_writeOpen on non-sm"));
 		os_waitForInput();
+		*/
+		os_error("os_sh_writeOpen on non-sm");
 		os_leaveCriticalSection();
 		return 0;
 	}
@@ -500,9 +506,12 @@ void os_sh_close(Heap const* heap, MemAddr addr) {
 	os_enterCriticalSection();
 
 	if (getOwnerOfChunk(heap, addr) < 8) {
+		/*
 		lcd_clear();
-		lcd_writeProgString(PSTR(" os_sh_close on non-shm: err"));
+		lcd_writeProgString(PSTR("os_sh_close on non-sm"));
 		os_waitForInput();
+		*/
+		os_error("os_sh_close on non-sm");
 		os_leaveCriticalSection();
 		return;
 	}
@@ -534,9 +543,12 @@ void os_sh_read(Heap const* heap, MemAddr const* ptr, uint16_t offset, MemValue*
 	os_enterCriticalSection();
 
 	if (!inBounds(heap, ptr, offset + length - 1)) {
+		/*
 		lcd_clear();
-		lcd_writeProgString(PSTR("ERROR! ptr not  in shm bounds"));
+		lcd_writeProgString(PSTR("ERROR!ptr not in sm bounds"));
 		os_waitForInput();
+		*/
+		os_error("ERROR!ptr not in sm bounds");
 		os_leaveCriticalSection();
 		return;
 	}
@@ -559,9 +571,12 @@ void os_sh_write(Heap const* heap, MemAddr const* ptr, uint16_t offset, MemValue
 
 	os_enterCriticalSection();
 	if (!inBounds(heap, ptr, offset + length - 1)) {
+		/*
 		lcd_clear();
-		lcd_writeProgString(PSTR("ERROR! ptr not  in shm bounds"));
+		lcd_writeProgString(PSTR("ERROR!ptr not in sm bounds"));
 		os_waitForInput();
+		*/
+		os_error("ERROR!ptr not in sm bounds");
 		os_leaveCriticalSection();
 		return;
 	}
