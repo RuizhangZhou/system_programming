@@ -594,9 +594,10 @@ bool os_kill(ProcessID pid) {
 	os_processes[pid].sp.as_int = 0;
 
 	// timeslice auf 0 u.�.
+	
 	os_resetProcessSchedulingInformation(pid);
 	os_removeFromMlfq(pid);
-
+	
 	for (uint8_t i = 0; i < os_getHeapListLength() ; i++) {
 		os_freeProcessMemory(os_lookupHeap(i), pid);
 	}

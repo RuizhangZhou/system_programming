@@ -118,11 +118,17 @@ void os_removeFromMlfq(ProcessID id) {
  */
 void os_resetProcessSchedulingInformation(ProcessID id) {
     // This is a presence task
-	schedulingInfo.age[id] = 0;
-
+	
+	//schedulingInfo.age[id] = 0;
+	if (os_getSchedulingStrategy() == OS_SS_INACTIVE_AGING)
+	{
+		schedulingInfo.age[id] = 0;
+	}
+	/*
 	if (id == 0) {
 		return;
 	}
+	*/
 
 	os_removeFromMlfq(id);
 	
