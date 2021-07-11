@@ -257,20 +257,26 @@ ProcessID os_Scheduler_InactiveAging(Process const processes[], ProcessID curren
 		
 		if (schedulingInfo.age[i] == schedulingInfo.age[oldestProc]) {
 			if (processes[i].priority == processes[oldestProc].priority) {
+				// Existieren mehrere Prozesse mit gleichem Alter und gleicher Priorit�t,
+				// wird der Prozess mit der kleinsten Prozess-ID ausgew�hlt
 				oldestProc = i < oldestProc ? i : oldestProc;
 			} else {
+				// Existieren mehrere Prozesse mit dem gleichen Alter, wird der h�chstpriorisierte ausgew�hlt.
 				oldestProc = processes[i].priority > processes[oldestProc].priority ? i : oldestProc;
 			}
 		}
 	}
 	
+	// Nach dem ersten Prozesswechsel soll der Leerlaufprozess nur noch aufgerufen werden,
+	// sofern kein anderer Prozess zur Verf�gung steht.
 	if (processes[oldestProc].state != OS_PS_READY) {
 		return 0;
 	}
 	
+	// Das Alter des ausgew�hlten Prozesses auf dessen Priorit�t zur�ckgesetzt.
 	schedulingInfo.age[oldestProc] = processes[oldestProc].priority;	
 	
-	return oldestProc;//if pid=0 here means that no other process isRunnable
+	return oldestProc;
 }
 
 /*!
@@ -291,7 +297,6 @@ ProcessID os_Scheduler_RunToCompletion(Process const processes[], ProcessID curr
 	}
 }
 
-//MultiLevelFeedbackQueue strategy.
 ProcessID os_Scheduler_MLFQ(Process const processes[], ProcessID current) {
 
 	for (uint8_t i = 0; i < 4; ++i) {

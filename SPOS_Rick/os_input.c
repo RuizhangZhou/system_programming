@@ -18,13 +18,7 @@ uint8_t os_getInput(void) {
 }
 
 /*!
- *  A simple "Getter"-Function for the Buttons on the evaluation board.\n
- *
- *  \returns The state of the button(s) in the lower bits of the return value.\n
- *  example: 1 Button:  -pushed:   00000001
- *                      -released: 00000000
- *           4 Buttons: 1,3,4 -pushed: 000001101
- *
+ *  Initializes DDR and PORT for input
  */
 void os_initInput() {
 	// Button Pins auf "Eingang" stellen
@@ -39,9 +33,7 @@ void os_initInput() {
  *  Endless loop until at least one button is pressed.
  */
 void os_waitForInput() {
-	// Mindestens ein Knopf gedr�ckt <=> Nicht kein Knopf gedr�ckt
 	while(os_getInput() == 0b00000000){
-		//weiter warten
 	}
 }
 
@@ -49,8 +41,6 @@ void os_waitForInput() {
  *  Endless loop as long as at least one button is pressed.
  */
 void os_waitForNoInput() {
-	// Mindestens ein Knopf gedr�ckt <=> Nicht kein Knopf gedr�ckt
 	while(os_getInput() != 0b00000000){
-		//weiter warten
 	}
 }
